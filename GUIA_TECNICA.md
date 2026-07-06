@@ -154,6 +154,21 @@ auto-selección). Puede llevar scripts/plantillas en su carpeta.
 /plugin                 # gestionar
 ```
 
+### La diferencia, resumida
+
+| | **Slash command** | **Skill** | **Plugin** |
+|---|---|---|---|
+| **Qué es** | Prompt guardado | Capacidad repetible con instrucciones + assets | Paquete distribuible |
+| **Fichero / ubicación** | `.claude/commands/<n>.md` (o `~/.claude/commands`) | `.claude/skills/<n>/SKILL.md` + carpeta con scripts/plantillas/refs | Instalado en `~/.claude/plugins` desde un marketplace |
+| **Invocación** | Manual: `/<n>` (la haces tú) | **Model-invoked**: Claude la elige por su `description` | Instala su contenido; no se invoca como tal |
+| **Empaqueta** | Un prompt (`$ARGUMENTS`) | Instrucciones + código/plantillas/referencias | skills + commands + agents + MCP + hooks |
+| **Distribución** | Copiar el `.md` | Copiar la carpeta, o dentro de un plugin | `/plugin marketplace add <owner/repo>` → `/plugin install <x>` |
+
+Regla mnemotécnica: **command = lo disparas tú** · **skill = lo decide Claude** (por la descripción) ·
+**plugin = el vehículo de reparto** (versionado) de comandos, skills, agentes, MCP y hooks. Ejemplos reales
+de plugins instalados así: `serena`, `context7`, `playwright`, y GSD (que trae decenas de skills `gsd-*`).
+Más detalle y ejemplos en [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/).
+
 **Subagentes** (tool `Task`): `Explore` (read-only), `Plan`, `general-purpose`, o especializados.
 Lánzalos en paralelo para trabajo independiente.
 
