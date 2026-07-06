@@ -12,4 +12,4 @@ Thumbs.db
 examples/
 # Nota: el .pptx generado SÍ se versiona (es un entregable).
 # Los ejemplos son material didáctico; sin secretos reales.
-presentacion/build_pptx.py
+#presentacion/build_pptx.py
