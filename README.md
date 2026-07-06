@@ -13,7 +13,7 @@ agente disciplinado).
 |---|---|
 | [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente: hilo a contar por slide + frases de cierre 🗣️. |
 | [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código). |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 14 slides). |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 19 slides). |
 | [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales: hooks, CLAUDE.md, MCP, skills, GSD, CodeGraph, automatización. |
 | [`docs/DISENO.md`](./docs/DISENO.md) | Documento de diseño / decisiones. |
@@ -25,7 +25,8 @@ agente disciplinado).
 - [`ejemplos/mcp/`](./ejemplos/mcp/) — `.mcp.json` con scopes y secretos por entorno.
 - [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill.
 - [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling.
-- [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) — las dos herramientas de metodología.
+- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/oráculo determinista) y un **runbook de ops real** (sincronizar el workspace entre máquinas) + el diagrama del flujo.
+- [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) — las dos herramientas de metodología, en profundidad.
 
 ## Regenerar el deck
 

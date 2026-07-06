@@ -196,31 +196,80 @@ Cinco hooks de ejemplo, todos reales:
 
 ## 6. Metodología real
 
-**Hilo:** Herramientas sin método = caos rápido. Así es como lo uso en el día a día.
+**Hilo:** Herramientas sin método = caos rápido. Esta es la parte más valiosa de la charla: **cómo se
+trabaja de verdad con Claude Code en un proyecto en producción.** No es un flujo perfecto — es el que
+usamos, sujeto a revisión constante. Todo el material está en
+[`ejemplos/metodologia/`](./ejemplos/metodologia/) (sanitizado).
 
 ### El principio
 > **El agente es un colaborador disciplinado, no un autopilot. La autonomía se gana por-decisión, no se
 > concede en bloque.** El agente posee investigación, planes, implementación, tests y documentación;
 > el humano posee las decisiones go/no-go, el scope y **toda acción externa** (push, PR, deploy).
 
-### Los gates que no se saltan
-- **"Sin prueba local no está hecho."** Nunca digas "arreglado/pasa" sin enseñar el output del comando.
-- **Oráculo determinista gratis antes de la tirada de pago:** diagnostica con un validador/parser
-  (determinista) y gástate la llamada al modelo solo para verificar el fix acabado.
-- **Solución genérica con "prueba no-op":** arregla la *clase* del problema y demuestra salida
-  byte-idéntica sobre el set de referencia conocido.
-- **Gate de sanitización** (mecánico, siempre): revisa las líneas *añadidas* por nombres de cliente,
-  IDs de ticket y secretos. Sin auto-atribución del agente en lo entregado.
-- **"'Variación del LLM' es la conclusión de último recurso"**, tras descartar configuración y lógica.
+### El flujo de 11 etapas
+
+![Flujo de trabajo con Claude Code — 11 etapas](./ejemplos/metodologia/flow.png)
+
+Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un STOP = *no escribir código*:
+
+1. **Orientar** — history-first Y status-first (`STATUS.md`/ledgers + `git`/`gh`). #1 causa de retrabajo saltárselo.
+2. **Triaje inbound** — ¿el síntoma es real en el **contrato de salida**? Si no → push back, no código.
+3. **Regresión vs. pre-existente** — reproducir sobre el estado previo antes de asumir la culpa.
+4. **Investigar** — **oráculo determinista** (parser/validador) primero; el LLM se reserva para verificar.
+5. **Plan** — proponer opciones + trade-offs; **acuerdo humano** explícito antes de tocar código.
+6. **Implementar** — TDD: RED (por el motivo correcto) → GREEN, cambio mínimo.
+7. **Verificar** — unit + scoped + regresión + **gate outbound**: reproducir el contrato arreglado en local.
+8. **Documentar** — porqué + qué + handover + criterios de aceptación, cada cosa **una vez**.
+9. **Sanitizar** — escanear las **líneas añadidas** por nombres/IDs/secretos/atribución del agente.
+10. **Handoff** — el humano (o un tool suyo, p. ej. Cursor) hace push/PR/deploy. El agente **nunca**.
+11. **Revisión automática + persistir** — triar hallazgos del bot como los de un humano; codificar lecciones.
+
+### Prevalencia de tools — qué usa Claude y cuándo (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
+El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool**. Regla real: *"usa Serena antes de abrir
+ficheros de 4–6k líneas; `find_referencing_symbols` SIEMPRE antes de renombrar/borrar."* Orden barato→caro:
+
+| Etapa | Herramienta |
+|---|---|
+| Orientar | `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
+| Navegar código | **Serena** (símbolos) · **CodeGraph** (rutas de llamada + blast radius) |
+| Diagnosticar | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
+| Entorno (logs, config) | **AWS CLI** — herramienta de debugging de primera clase |
+| Contrato de salida | **Playwright** / F12 sobre el endpoint que ve el consumidor |
+| Solo al final | La tirada del **LLM** — para *verificar* el fix, no para diagnosticar |
+
+### Un ejemplo real (ver [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
+Bug: *"un campo sale vacío en la UI pero está en el PDF."* → Orientar (STATUS.md encuentra un
+`SHARP_EDGES` que restringe el fix) → confirmar el vacío en el JSON del contrato (Playwright) →
+pre-existente, no regresión → Serena+CodeGraph localizan el detector de fin de provisión, y un
+`_diag_pdf.py` determinista revela la causa (desbordamiento a 2ª columna) **sin una sola llamada al LLM**
+→ plan aprobado → test RED → fix keyed en la *propiedad estructural* (no en el cliente) → regresión
+byte-idéntica (prueba no-op) + contrato reproducido en local → documentar → sanitizar → el humano hace el
+push. Un review-bot detecta un caso de columna a la izquierda → se añade el test y va al `PLAYBOOK`.
 
 ### El tooling que lo encarna
-- **GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — ciclo por fases *discutir → planificar → ejecutar →
-  verificar* con estado en `.planning/` y subagentes especializados. Es el método hecho tooling.
-- **CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — grafo del código: en vez de
-  grep→abrir→seguir-import, una consulta devuelve fuente + rutas de llamada + blast radius.
-- **Serena + Playwright + AWS CLI** — navegación semántica, verificación de UI, diagnóstico determinista.
+- **GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método **hecho tooling**: ciclo *discutir → planificar
+  → ejecutar → verificar* con estado en `.planning/` y subagentes (`gsd-planner`, `gsd-plan-checker`,
+  `gsd-executor`, `gsd-verifier`…). El gate de plan y la verificación de objetivo son los de la metodología.
+- **CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — índice tree-sitter→SQLite local; una
+  consulta devuelve fuente + rutas de llamada + blast radius (58% menos tool calls en sus benchmarks).
+- **Serena · Playwright · AWS CLI** — navegación semántica, verificación del contrato, diagnóstico determinista.
 
-🗣️ *"El modelo no gana confianza gratis: la gana decisión a decisión, con evidencia. Ese es el trabajo."*
+### Los mismos principios en ops: sincronizar máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
+Un runbook real que usamos para mover el workspace entre la máquina principal y el portátil. Demuestra que
+la metodología no es solo para código:
+- **Sincronización asimétrica:** outbound = **copia completa** (un tarball: workspace + `~/.claude`/`.aws`/
+  `.ssh`, con `-h` para dereferenciar symlinks, excluyendo venvs/node_modules); inbound = **solo delta**
+  (el código ya está en GitHub → `git fetch`; solo los docs gitignored de `data/`, unos MB, viajan).
+- **Memoria durable, bajo demanda:** el runbook **no** vive en el `CLAUDE.md` always-loaded — hay un
+  puntero de una línea; se carga solo cuando viajas.
+- **El landing lo conduce un agente con guardrails:** el `INSTRUCTIONS.md` del delta está escrito *para un
+  agente*; solo no-destructivo (renombrar, no borrar), `git fetch` es la única op de red, backup+`diff` de
+  `STATUS.md`, y **STOP y pregunta** si la principal hizo ediciones propias. El humano aprueba; el agente
+  no hace push/merge.
+- **"Descubre, no asumas":** los comandos **derivan** la raíz del workspace (`ls -d /mnt/*/ILS`), no la
+  hardcodean, porque las rutas difieren por máquina.
+
+🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
 
 ---
 

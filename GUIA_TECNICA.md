@@ -217,19 +217,74 @@ Ejemplo completo: [`sdk.ts`](./ejemplos/automation/sdk.ts). El `query_hook.js` e
 
 ## 9. Metodología, GSD y CodeGraph
 
-**Metodología** (ver `GUIA_PRESENTACION.md` §6): agente = colaborador disciplinado; gates de evidencia
-("sin prueba local no está hecho"), oráculo determinista antes de la tirada de pago, solución genérica
-con prueba no-op, gate de sanitización, "variación del LLM = último recurso".
+Todo el material profundo (flujo de 11 etapas, ejemplo real end-to-end, prevalencia de tools) está en
+[`ejemplos/metodologia/`](./ejemplos/metodologia/). Resumen:
 
-**GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — ciclo por fases con estado en `.planning/`:
+### Metodología — el flujo real (ver [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md))
+Agente = colaborador disciplinado; la autonomía se gana por-decisión. 11 etapas encadenadas por **gates
+deterministas**: orientar (history+status) → triaje inbound en el **contrato de salida** → regresión vs
+pre-existente → investigar con **oráculo determinista** (antes de la tirada de pago) → plan+acuerdo →
+TDD RED→GREEN → verificar (unit+scoped+regresión+contrato) → documentar → **sanitizar** (líneas añadidas)
+→ handoff (el humano hace push/PR/deploy) → revisión automática + persistir.
+Caso concreto de principio a fin: [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md).
+
+### Prevalencia de tools (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
+El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden** (barato→caro,
+determinista→probabilístico):
 ```
-/gsd-new-project → /gsd-plan-phase → /gsd-execute-phase → /gsd-verify-work
-/gsd-progress    # dónde estás y qué toca
+Orientar     -> STATUS.md/ledgers · git · gh                    (coste 0)
+Navegar      -> Serena (get_symbols_overview/find_symbol)        · CodeGraph (rutas + blast radius)
+                REGLA: find_referencing_symbols SIEMPRE antes de renombrar/borrar
+Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (coste 0, reproducible)
+Entorno      -> AWS CLI (CloudWatch, lambda get-function, SQS/DLQ)   (read-only)
+Contrato     -> Playwright / F12 sobre el endpoint de salida
+Solo al final-> la tirada del LLM, para VERIFICAR el fix (no para diagnosticar)
 ```
 
-**CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — grafo SQLite del código:
+### GSD ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método hecho tooling
+Ciclo por fases con estado versionado en `.planning/` y subagentes especializados:
+```
+/gsd-new-project  -> PROJECT.md + ROADMAP.md
+/gsd-plan-phase   -> PLAN.md   (+ gate gsd-plan-checker, goal-backward)
+/gsd-execute-phase-> ejecución en olas, commits atómicos (gsd-executor)
+/gsd-verify-work  -> VERIFICATION.md (gsd-verifier: verifica el OBJETIVO, no solo las tareas)
+/gsd-progress     # comando situacional: qué toca ahora
+```
+Subagentes: `gsd-planner`, `gsd-plan-checker`, `gsd-executor`, `gsd-code-reviewer`, `gsd-verifier`,
+`gsd-phase-researcher`.
+
+### CodeGraph ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — inteligencia de código local
+Índice tree-sitter → SQLite en `.codegraph/` (sin API keys). Devuelve símbolos + rutas de llamada +
+blast radius. Benchmarks: 58% menos tool calls, 22% más rápido.
 ```bash
-codegraph init                       # crea .codegraph/
-codegraph explore "<símbolo|pregunta>"   # fuente + rutas de llamada + blast radius, en 1 round-trip
+codegraph init        # crea .codegraph/     codegraph watch   # re-indexa en vivo
+codegraph explore "<símbolo|pregunta>"       # fuente + rutas + blast radius, en 1 round-trip
+codegraph mcp         # servidor MCP para Claude Code (tool codegraph_explore)
 ```
-Úsalo antes que grep/Read para impacto, callers y navegación en repos grandes.
+Úsalo antes que grep/Read para impacto, callers y navegación en repos grandes; complementa a Serena
+(overview/símbolos) y a code-review-graph (qué cambió y con qué riesgo).
+
+### Runbook de ops: sincronizar el workspace entre máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
+Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops. **Asimétrico:**
+
+```bash
+# OUTBOUND (principal -> portátil): COPIA COMPLETA. -h dereferencia el symlink de .aws (crítico);
+# se excluyen venvs/node_modules/caches; se omite .gnupg si no existe.
+WS=$(ls -d /mnt/*/ILS 2>/dev/null | head -1)          # DERIVAR la raíz, no asumir
+tar -czhf ~/ils-migration-$(date +%Y%m%d).tar.gz \
+  --exclude='*/node_modules' --exclude='*/.venv' --exclude='*/__pycache__' --exclude='*.pyc' \
+  -C "$(dirname "$WS")" "$(basename "$WS")" \
+  -C /home/$USER .claude .aws .ssh
+
+# INBOUND (portátil -> principal): SOLO DELTA. El código ya está en GitHub.
+git fetch origin                                      # única op de red (read-only)
+cp data/changes/STATUS.md data/changes/STATUS.md.mainbak   # backup ANTES
+tar -xzf "$TARBALL" -C "$REPO"                         # solo los docs gitignored de data/
+diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # ¿solo adiciones? quedarse. ¿ediciones propias? STOP
+```
+
+Guardrails (el landing lo conduce **un agente**, con un `INSTRUCTIONS.md` escrito *para* él): solo
+no-destructivo (renombrar, no borrar; nunca dos ops de movimiento a la vez en un mount Windows); sin
+escrituras git a remoto (nada de push/merge/PR); STOP y preguntar ante ambigüedad; el binario del AWS CLI
+**no** va en el bundle (reinstalar en destino + `aws sso login`). El humano es dueño de las acciones
+externas; el agente prepara y reporta con evidencia (conteos de ficheros, estados de PR).
