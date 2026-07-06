@@ -156,6 +156,20 @@ día), `playwright` (verificar la UI en un navegador real), `codegraph` (grafo d
    instalable: `/plugin marketplace add <owner/repo>` → `/plugin install <x>`. Así se distribuye un setup
    entero (GSD instala decenas de skills de golpe).
 
+### Slash command vs. skill vs. plugin — la diferencia en una tabla
+
+| | **Slash command** | **Skill** | **Plugin** |
+|---|---|---|---|
+| **Qué es** | Un prompt guardado | Una capacidad repetible con instrucciones + ficheros de apoyo | Un paquete distribuible |
+| **Dónde vive** | `.claude/commands/<n>.md` | `.claude/skills/<n>/SKILL.md` (+ scripts/plantillas en la carpeta) | Se instala en `~/.claude/plugins` desde un marketplace |
+| **Cómo se invoca** | **Tú**, escribiendo `/<n>` | **Claude la auto-selecciona** por su `description` | No se "invoca": instala lo de dentro |
+| **Qué empaqueta** | Solo el prompt (acepta `$ARGUMENTS`) | Instrucciones + código/plantillas/referencias | skills + comandos + agentes + MCP + hooks |
+| **Alcance** | Un flujo corto | Un flujo con assets | Un setup entero |
+| **Distribución** | Copiar el fichero | Copiar la carpeta (o vía un plugin) | `/plugin install` (GSD, serena, context7… son plugins) |
+
+La idea en una frase: el **slash command lo disparas tú**; la **skill la decide Claude** (por su
+descripción); el **plugin es el vehículo de reparto** de ambas cosas —y de agentes, MCP y hooks— versionado.
+
 **Subagentes:** con `Task` lanzas agentes con su propio contexto (`Explore`, `Plan`, `general-purpose`,
 o especializados) para paralelizar sin ensuciar tu sesión.
 
