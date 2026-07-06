@@ -232,9 +232,9 @@ Caso concreto de principio a fin: [`metodologia/EJEMPLO_REAL.md`](./ejemplos/met
 El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden** (barato→caro,
 determinista→probabilístico):
 ```
-Orientar     -> STATUS.md/ledgers · git · gh                    (coste 0)
-Navegar      -> Serena (get_symbols_overview/find_symbol)        · CodeGraph (rutas + blast radius)
-                REGLA: find_referencing_symbols SIEMPRE antes de renombrar/borrar
+Orientar     -> STATUS.md/ledgers · git · gh                        (coste 0)
+Navegar      -> CodeGraph codegraph_explore: fuente+rutas+blast radius+cobertura (1 llamada; trátala como YA leída)
+Refactor-chk -> Serena find_referencing_symbols (desambigua por clase)  OBLIGATORIO antes de renombrar/borrar
 Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (coste 0, reproducible)
 Entorno      -> AWS CLI (CloudWatch, lambda get-function, SQS/DLQ)   (read-only)
 Contrato     -> Playwright / F12 sobre el endpoint de salida
@@ -255,14 +255,20 @@ Subagentes: `gsd-planner`, `gsd-plan-checker`, `gsd-executor`, `gsd-code-reviewe
 
 ### CodeGraph ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — inteligencia de código local
 Índice tree-sitter → SQLite en `.codegraph/` (sin API keys). Devuelve símbolos + rutas de llamada +
-blast radius. Benchmarks: 58% menos tool calls, 22% más rápido.
+blast radius + **flags de cobertura de tests**. Benchmarks: 58% menos tool calls, 22% más rápido.
 ```bash
-codegraph init        # crea .codegraph/     codegraph watch   # re-indexa en vivo
+codegraph init        # crea .codegraph/ y construye el índice   codegraph sync   # incremental tras editar
 codegraph explore "<símbolo|pregunta>"       # fuente + rutas + blast radius, en 1 round-trip
-codegraph mcp         # servidor MCP para Claude Code (tool codegraph_explore)
+codegraph impact|callers|node <símbolo>      # blast radius / callers / 1 símbolo + trail
+codegraph install --target=claude --location=global   # escribe la config MCP (--location: global|local, NO user)
+codegraph serve --path <repo> --mcp          # server MCP; --path fija el proyecto POR DEFECTO
 ```
-Úsalo antes que grep/Read para impacto, callers y navegación en repos grandes; complementa a Serena
-(overview/símbolos) y a code-review-graph (qué cambió y con qué riesgo).
+Es el **primer** tool de navegación (antes que grep/Read); trata la fuente que imprime como **ya leída** (no
+re-abras ese fichero). El MCP **no tiene proyecto por defecto** salvo que fijes `--path`: hazlo y
+`codegraph_explore` no necesita `projectPath`; pásalo solo para consultar **otro** repo indexado (ya indexamos
+`monolith` y `frontend`). En WSL2 `/mnt` el watcher puede perder cambios → `codegraph sync` tras editar.
+Complementa a Serena: `find_referencing_symbols` sigue siendo el chequeo **preciso** antes de renombrar/borrar
+(CodeGraph `impact` mezcla métodos homónimos; Serena los desambigua por clase).
 
 ### Runbook de ops: sincronizar el workspace entre máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
 Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops. **Asimétrico:**
@@ -272,9 +278,11 @@ Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de 
 # se excluyen venvs/node_modules/caches; se omite .gnupg si no existe.
 WS=$(ls -d /mnt/*/ILS 2>/dev/null | head -1)          # DERIVAR la raíz, no asumir
 tar -czhf ~/ils-migration-$(date +%Y%m%d).tar.gz \
-  --exclude='*/node_modules' --exclude='*/.venv' --exclude='*/__pycache__' --exclude='*.pyc' \
+  --exclude='*/node_modules' --exclude='*/.codegraph' --exclude='*/.venv' --exclude='*/__pycache__' --exclude='*.pyc' \
   -C "$(dirname "$WS")" "$(basename "$WS")" \
   -C /home/$USER .claude .aws .ssh
+# En destino: bash data/machine-sync/target-setup.sh  -> reinstala el CLI de CodeGraph, actualiza GSD si va
+# atrasado, corrige el --path del MCP a la raíz real del portátil, y reconstruye el índice (codegraph init).
 
 # INBOUND (portátil -> principal): SOLO DELTA. El código ya está en GitHub.
 git fetch origin                                      # única op de red (read-only)
@@ -286,5 +294,6 @@ diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # ¿solo adiciones? q
 Guardrails (el landing lo conduce **un agente**, con un `INSTRUCTIONS.md` escrito *para* él): solo
 no-destructivo (renombrar, no borrar; nunca dos ops de movimiento a la vez en un mount Windows); sin
 escrituras git a remoto (nada de push/merge/PR); STOP y preguntar ante ambigüedad; el binario del AWS CLI
-**no** va en el bundle (reinstalar en destino + `aws sso login`). El humano es dueño de las acciones
+**no** va en el bundle (reinstalar en destino + `aws sso login`) — igual el CLI de CodeGraph y el índice
+`.codegraph/`, que repone `target-setup.sh`. El humano es dueño de las acciones
 externas; el agente prepara y reporta con evidencia (conteos de ficheros, estados de PR).

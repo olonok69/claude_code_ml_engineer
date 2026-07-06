@@ -225,13 +225,17 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 11. **Revisión automática + persistir** — triar hallazgos del bot como los de un humano; codificar lecciones.
 
 ### Prevalencia de tools — qué usa Claude y cuándo (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
-El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool**. Regla real: *"usa Serena antes de abrir
-ficheros de 4–6k líneas; `find_referencing_symbols` SIEMPRE antes de renombrar/borrar."* Orden barato→caro:
+El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden**. Regla real (actualizada):
+*"para 'qué es esto / quién depende / qué toco', un `codegraph_explore` **primero** — fuente + rutas de
+llamada + blast radius + flags de cobertura de tests en una sola llamada (trata la fuente que devuelve como
+YA leída, no la re-abras); Serena `find_referencing_symbols` para el chequeo **preciso** antes de
+renombrar/borrar; grep/Read solo para literales."* Orden barato→caro:
 
 | Etapa | Herramienta |
 |---|---|
 | Orientar | `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
-| Navegar código | **Serena** (símbolos) · **CodeGraph** (rutas de llamada + blast radius) |
+| Navegar (survey) | **CodeGraph** `codegraph_explore` — fuente + rutas + blast radius + cobertura, en 1 llamada |
+| Refactor-check preciso | **Serena** `find_referencing_symbols` — desambigua por clase; **obligatorio** antes de renombrar/borrar |
 | Diagnosticar | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
 | Entorno (logs, config) | **AWS CLI** — herramienta de debugging de primera clase |
 | Contrato de salida | **Playwright** / F12 sobre el endpoint que ve el consumidor |
@@ -251,7 +255,10 @@ push. Un review-bot detecta un caso de columna a la izquierda → se añade el t
   → ejecutar → verificar* con estado en `.planning/` y subagentes (`gsd-planner`, `gsd-plan-checker`,
   `gsd-executor`, `gsd-verifier`…). El gate de plan y la verificación de objetivo son los de la metodología.
 - **CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — índice tree-sitter→SQLite local; una
-  consulta devuelve fuente + rutas de llamada + blast radius (58% menos tool calls en sus benchmarks).
+  consulta (`codegraph_explore`) devuelve fuente + rutas de llamada + blast radius + **flags de cobertura de
+  tests** (58% menos tool calls en sus benchmarks). Es el **primer** tool de navegación; el proyecto por
+  defecto se fija con `--path` en la config MCP (o se pasa `projectPath` para otro repo — ya indexamos
+  también `monolith` y `frontend`).
 - **Serena · Playwright · AWS CLI** — navegación semántica, verificación del contrato, diagnóstico determinista.
 
 ### Los mismos principios en ops: sincronizar máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
@@ -268,6 +275,9 @@ la metodología no es solo para código:
   no hace push/merge.
 - **"Descubre, no asumas":** los comandos **derivan** la raíz del workspace (`ls -d /mnt/*/ILS`), no la
   hardcodean, porque las rutas difieren por máquina.
+- **El tooling también se sincroniza:** el índice `.codegraph/` se **excluye** del tarball (es local, con
+  rutas absolutas) y se reconstruye en destino; un `target-setup.sh` idempotente reinstala el CLI de
+  CodeGraph, actualiza GSD solo si va atrasado y **corrige el `--path` del MCP** a la raíz real del portátil.
 
 🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
 

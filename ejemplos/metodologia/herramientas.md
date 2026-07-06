@@ -3,22 +3,25 @@
 El `CLAUDE.md` del proyecto no solo dice *qué* hacer; dice **con qué herramienta** y en qué orden. Esta es
 la parte que convierte "tengo MCP instalado" en "el agente tira de la tool correcta automáticamente".
 
-## La regla de oro: navegación semántica antes que leer ficheros
+## La regla de oro: navegación por grafo antes que leer ficheros
 
-> **"Usa las tools simbólicas de Serena (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`)
-> antes de abrir ficheros de extractor de 4k–6k líneas. Siempre `find_referencing_symbols` antes de
-> renombrar o eliminar un helper."** — regla real del `CLAUDE.md`.
+> **"Para 'qué es esto / quién depende / qué toco', un `codegraph_explore` **primero** — fuente + rutas de
+> llamada + blast radius + flags de cobertura de tests en una llamada (trata la fuente que devuelve como YA
+> leída, no la re-abras). Serena `find_referencing_symbols` para el chequeo **preciso** antes de renombrar o
+> eliminar un helper (desambigua por clase). grep/Read solo para literales."** — regla real del `CLAUDE.md`.
 
 Por qué es una *regla* y no una sugerencia: los ficheros clave tienen 4.000–6.000 líneas. Leerlos enteros
-es caro (tokens) e impreciso. Serena devuelve el símbolo, sus callers y sus tests sin cargar el fichero.
+es caro (tokens) e impreciso. CodeGraph devuelve el símbolo, sus callers, sus tests y **qué se rompe al
+cambiarlo** en un solo round-trip; Serena desambigua un símbolo homónimo por clase antes de un rename —
+donde el `impact` plano de CodeGraph los mezclaría.
 
 ## Tabla de prevalencia
 
 | Necesito… | Herramienta preferida | Por qué / regla |
 |---|---|---|
-| Entender un fichero grande, encontrar un símbolo | **Serena** `get_symbols_overview` → `find_symbol body=true` | Antes de abrir ficheros de 5k líneas. |
-| Saber quién llama a algo / impacto de un rename | **Serena** `find_referencing_symbols` | **Obligatorio** antes de refactorizar/borrar. |
-| "¿Quién llama a esto y qué se rompe si lo cambio?" a escala | **CodeGraph** `codegraph_explore` | Fuente + rutas de llamada + blast radius en 1 consulta (incluye dispatch dinámico que grep no sigue). |
+| Survey: "qué es / quién depende / qué se rompe / ¿está testeado?" | **CodeGraph** `codegraph_explore` | Fuente + rutas de llamada + blast radius + cobertura en 1 consulta (incluye dispatch dinámico que grep no sigue). Trátala como YA leída. |
+| Chequeo preciso antes de un rename/borrado | **Serena** `find_referencing_symbols` | **Obligatorio**; desambigua homónimos por clase (el `impact` de CodeGraph los mezcla). |
+| Cuerpo de un símbolo / overview de un fichero de 5k líneas | **Serena** `find_symbol body=true` / `get_symbols_overview` | O la fuente que ya imprimió `codegraph_explore`. |
 | Verificar el **contrato de salida** (lo que ve el consumidor) | **Playwright** / F12 en el navegador | Subir un doc → "Review & Import" → inspeccionar el JSON del `status endpoint`. El bug se reproduce ahí. |
 | Diagnosticar causa raíz **barato** | **Oráculo determinista** (parser, validador, `_diag_*.py`) | Misma respuesta siempre, coste 0. Antes de gastar en el LLM. |
 | Diagnosticar entorno (logs, config de Lambda, colas) | **AWS CLI** (CloudWatch, `aws lambda get-function`, SQS/DLQ) | Herramienta de debugging de primera clase, no último recurso. |
@@ -29,7 +32,7 @@ es caro (tokens) e impreciso. Serena devuelve el símbolo, sus callers y sus tes
 ## El orden importa (barato → caro, determinista → probabilístico)
 
 1. **Orientación:** markdown local (`STATUS.md`, ledgers) + `git`/`gh` — coste 0.
-2. **Navegación:** Serena / CodeGraph — coste bajo, determinista.
+2. **Navegación:** CodeGraph `codegraph_explore` (survey, 1 llamada) → Serena `find_referencing_symbols` (chequeo preciso antes de renombrar) — coste bajo, determinista.
 3. **Diagnóstico:** oráculo determinista (parser/validador) — coste 0, reproducible.
 4. **Verificación de entorno:** AWS CLI — read-only, determinista.
 5. **Verificación del contrato:** Playwright/F12 — reproducir el síntoma en la salida real.
@@ -42,7 +45,8 @@ es caro (tokens) e impreciso. Serena devuelve el símbolo, sus callers y sus tes
 
 El `settings.local.json` del proyecto es un allowlist **hand-curated** (cientos de reglas específicas, no
 comodines): invocaciones exactas de pytest, operaciones git acotadas, `aws lambda/sts/configure`, y las
-tools MCP concretas de Serena (`find_symbol`, `search_for_pattern`, `activate_project`, `find_file`) y
-Playwright (`browser_navigate`, `browser_console_messages`, `browser_take_screenshot`, `browser_evaluate`).
+tools MCP concretas de Serena (`find_symbol`, `search_for_pattern`, `activate_project`, `find_file`),
+CodeGraph (`codegraph_explore`) y Playwright (`browser_navigate`, `browser_console_messages`,
+`browser_take_screenshot`, `browser_evaluate`).
 `deny` y `ask` van vacíos porque el allowlist ya es la barrera — y el humano es dueño de las acciones
 externas (push/PR/deploy no están en la lista).

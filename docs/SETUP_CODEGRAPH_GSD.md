@@ -109,12 +109,13 @@ CodeGraph trae un instalador que **auto-detecta Claude Code y escribe la config 
 
 ```bash
 codegraph install            # detecta agentes y escribe su config MCP
-# o explícito y no-interactivo:
-codegraph install --target=claude --location=user --yes
+# o explícito y no-interactivo (--location es global|local, NO "user"):
+codegraph install --target=claude --location=global --yes
 ```
 
-**Alternativa manual** (si prefieres controlarlo tú) — añade a `~/.claude.json` el server, scope user
-(disponible en todos tus proyectos):
+**Proyecto por defecto (recomendado):** el server MCP **no tiene proyecto por defecto** — en modo MCP usa el
+`rootUri` del cliente (= la raíz del workspace, p. ej. `/mnt/d/ILS`, que no tiene `.codegraph/`). Fija el
+repo con `--path` para que `codegraph_explore` **no** pida `projectPath` en cada llamada:
 
 ```jsonc
 {
@@ -122,11 +123,13 @@ codegraph install --target=claude --location=user --yes
     "codegraph": {
       "type": "stdio",
       "command": "codegraph",
-      "args": ["serve", "--mcp"]
+      "args": ["serve", "--path", "/mnt/d/ILS/document-parser-lambda", "--mcp"]
     }
   }
 }
 ```
+(Sin `--path`, pásale `projectPath` en cada llamada; con `--path` fijado, va sin él y solo lo pasas para
+consultar **otro** repo indexado. Cualquier cambio de config MCP requiere **reiniciar** Claude Code.)
 
 ### B3. Indexar los repos de ILS
 
@@ -185,11 +188,12 @@ como estén. No añadas acciones externas al allowlist — esa postura no cambia
    /mcp
    ```
    Debe aparecer **codegraph** como conectado, con su tool.
-3. Prueba real en el repo propio:
+3. Prueba real en el repo propio (con `--path` fijado va **sin** `projectPath`; si no, pásalo):
    ```
    codegraph_explore "detección de fin de provisión en el extractor de PDF"
    ```
-   Debe devolver fuente + rutas de llamada + blast radius, sin que hayas leído el fichero entero.
+   Debe devolver fuente + rutas de llamada + blast radius + flags de cobertura, sin que hayas leído el
+   fichero entero. Si responde *"No CodeGraph project is loaded"*, falta el `--path` (o el `projectPath`).
 
 ---
 

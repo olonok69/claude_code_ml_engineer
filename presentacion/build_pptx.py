@@ -406,18 +406,19 @@ def build():
     base(s, "06 · Metodología real", "Qué herramienta usa Claude, y cuándo", page=14)
     text(s, 0.7, 1.9, 11.95, 0.5,
          [[R("Regla del CLAUDE.md: ", 12, MUTED, False),
-           R("usa Serena antes de abrir ficheros de 4–6k líneas · find_referencing_symbols "
-             "SIEMPRE antes de renombrar. ", 12, TEXT, True),
+           R("codegraph_explore PRIMERO (survey en 1 llamada) · Serena find_referencing_symbols "
+             "para el chequeo preciso antes de renombrar. ", 12, TEXT, True),
            R("Orden: barato → caro, determinista → probabilístico.", 12, MUTED, False)]])
     rows = [
         ("Orientar", "STATUS.md / ledgers · git · gh", "coste 0"),
-        ("Navegar código", "Serena (símbolos) · CodeGraph (rutas + blast radius)", "determinista"),
+        ("Navegar (survey)", "CodeGraph codegraph_explore — fuente + rutas + blast radius + cobertura", "1 llamada"),
+        ("Refactor-check", "Serena find_referencing_symbols — desambigua por clase (antes de renombrar)", "preciso"),
         ("Diagnosticar", "Oráculo determinista: parser / validador / _diag_*.py", "coste 0"),
         ("Entorno (logs, config)", "AWS CLI — CloudWatch · lambda get-function · SQS/DLQ", "read-only"),
         ("Contrato de salida", "Playwright / F12 sobre el endpoint que ve el consumidor", "reproducir"),
         ("Solo al final", "La tirada del LLM — para VERIFICAR el fix, no para diagnosticar", "metered"),
     ]
-    y0 = 2.55
+    y0 = 2.5
     for i, (etapa, tool, tag) in enumerate(rows):
         y = y0 + i * 0.6
         last = (i == len(rows) - 1)
@@ -459,8 +460,8 @@ def build():
     panel_bullets(s, 0.7, 2.0, 5.85, 2.6, "Outbound — copia completa",
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
-                   "Excluye venvs / node_modules / caches",
-                   "El binario del AWS CLI se reinstala en destino"], accent=BLUE)
+                   "Excluye venvs / node_modules / caches / .codegraph",
+                   "AWS CLI + CodeGraph + índice: se rehacen en destino (target-setup.sh)"], accent=BLUE)
     panel_bullets(s, 6.8, 2.0, 5.85, 2.6, "Inbound — solo delta",
                   ["El código ya está en GitHub → git fetch",
                    "Solo los docs gitignored de data/ (unos MB) viajan",
@@ -500,18 +501,19 @@ def build():
                   ["Símbolos: funciones, clases, rutas, componentes",
                    "Aristas: llamadas, imports, herencia, referencias",
                    "Determinista (del AST), sin API keys",
-                   "Devuelve: fuente + rutas de llamada + blast radius"], accent=BLUE)
+                   "Devuelve: fuente + rutas + blast radius + cobertura"], accent=BLUE)
     code(s, 6.8, 2.2, 5.85, 1.7,
          ["codegraph init      # crea .codegraph/",
-          "codegraph watch     # re-indexa en vivo",
+          "codegraph sync      # incremental tras editar",
           "codegraph explore \"<símbolo|pregunta>\"",
-          "codegraph mcp       # server para Claude"],
-         title="CLI")
+          "codegraph serve --path <repo> --mcp"],
+         title="CLI  (install --location=global escribe el MCP)")
     rect(s, 6.8, 4.15, 5.85, 1.2, fill=PANEL, line=STROKE, rounded=True, radius=0.06)
-    text(s, 7.05, 4.3, 5.4, 1.0,
-         [[R("vs. Serena/grep:  ", 11, CORAL, True),
-           R("CodeGraph = fuente + callers + blast radius en 1 consulta. "
-             "Serena = overview/símbolos. grep = texto plano.", 11, TEXT, False)]], line_spacing=1.05)
+    text(s, 7.05, 4.28, 5.4, 1.05,
+         [[R("Primero para navegar:  ", 11, CORAL, True),
+           R("fuente + callers + blast radius + cobertura en 1 consulta (trátala como YA leída). "
+             "Serena find_referencing_symbols = chequeo preciso (desambigua por clase). "
+             "--path fija el repo por defecto.", 11, TEXT, False)]], line_spacing=1.03)
     text(s, 0.7, 4.6, 5.85, 1.4,
          [[R("58% menos tool calls · 22% más rápido", 13, GREEN, True)],
           [R("(según sus benchmarks: casi elimina las lecturas de fichero)", 10.5, MUTED, False)]],

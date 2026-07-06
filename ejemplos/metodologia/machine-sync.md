@@ -46,7 +46,7 @@ WS=$(ls -d /mnt/*/ILS 2>/dev/null | head -1)
 STAMP=$(date +%Y%m%d)
 
 tar -czhf ~/ils-migration-$STAMP.tar.gz \
-  --exclude='*/node_modules' \
+  --exclude='*/node_modules' --exclude='*/.codegraph' \
   --exclude='*/.venv' --exclude='*/.venv-win' \
   --exclude='*/__pycache__' --exclude='*/.pytest_cache' \
   --exclude='*/.ruff_cache' --exclude='*/.mypy_cache' --exclude='*.pyc' \
@@ -58,7 +58,10 @@ ls -lh ~/ils-migration-$STAMP.tar.gz   # se esperan cientos de MB; si son KB, el
 En el portátil: **parquear** (renombrar, no borrar) cualquier workspace previo, extraer, y **recrear los
 pesados excluidos** (`python -m venv`, `npm install`) por repo que vayas a ejecutar. El **binario** del
 AWS CLI **no** va en el bundle (es una instalación de sistema) — se reinstala en el destino y se hace
-`aws sso login` una vez (el token cacheado viaja caducado).
+`aws sso login` una vez (el token cacheado viaja caducado). Lo mismo con el **tooling de navegación**: el
+índice `.codegraph/` se excluye (rutas absolutas, machine-local) y un `target-setup.sh` idempotente
+reinstala el CLI de CodeGraph, actualiza GSD si va atrasado, **corrige el `--path` del MCP** a la raíz real
+del portátil y reconstruye el índice (`codegraph init`).
 
 ## Inbound — solo delta (el retorno)
 
