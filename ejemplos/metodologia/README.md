@@ -1,0 +1,32 @@
+# Metodología real de trabajo con Claude Code
+
+Cómo se usa Claude Code de verdad en un proyecto en producción — **no una plantilla ideal**, sino el
+flujo que usamos, sujeto a revisión constante. Sanitizado (sin nombres de cliente, IDs de ticket ni
+secretos); las herramientas, gates y organización son los reales.
+
+| Archivo | Qué es |
+|---|---|
+| [`WORKFLOW.md`](./WORKFLOW.md) | Las 11 etapas + la memoria de dos niveles, con las tools reales. |
+| [`EJEMPLO_REAL.md`](./EJEMPLO_REAL.md) | **Un caso concreto de principio a fin** (un bug de "campo vacío") por las 11 etapas. |
+| [`herramientas.md`](./herramientas.md) | Prevalencia de tools: qué usa Claude y cuándo (Serena, CodeGraph, Playwright, AWS CLI, oráculo determinista). |
+| [`machine-sync.md`](./machine-sync.md) | **Un runbook real de ops**: sincronizar el workspace entre máquinas (copia completa vs. delta), aterrizado por un agente con guardrails. |
+| [`flow.png`](./flow.png) | El diagrama del flujo, renderizado (gates en coral, la rama roja es STOP). |
+| [`flow.mmd`](./flow.mmd) · [`render_flow.py`](./render_flow.py) | Fuente editable (Mermaid) y el script que genera `flow.png` (`python render_flow.py`). |
+
+![Flujo de trabajo — 11 etapas](./flow.png)
+
+## Idea central
+
+> **El agente es un colaborador disciplinado, no un autopilot. La autonomía se gana por-decisión.**
+
+El agente hace la anchura (investigar, planificar, implementar, testear, documentar); el humano es dueño
+de las decisiones y de **toda acción externa**. Entre medias, una serie de **gates deterministas**
+—contrato de salida, oráculo gratis, batería de tests, prueba no-op, escaneo de sanitización— convierten
+la capacidad bruta del modelo en salida fiable.
+
+## Cómo encaja con las herramientas del repo
+
+- **GSD** ([`../gsd/`](../gsd/)) es este método **hecho tooling**: separa discutir/planificar/ejecutar/
+  verificar con estado en `.planning/` y subagentes especializados.
+- **CodeGraph** ([`../codegraph/`](../codegraph/)) y **Serena** son la capa de navegación (etapa 4).
+- **Playwright** verifica el contrato de salida (etapa 2 y 7).
