@@ -96,11 +96,18 @@ acciones externas (push/PR/deploy) → esas no van en `allow`.
 |---|---|
 | Continuar una sesión local desde el móvil | **Remote Control** (`/en/remote-control`) |
 | Empezar en web/móvil y traerla al terminal | `claude --teleport` |
-| Pasar del terminal al Desktop (diffs visuales) | `/desktop` |
+| Pasar del terminal al Desktop (diffs visuales) | `/desktop` (ver caveat abajo) |
 | Empujar eventos externos (Telegram/Discord/webhooks) a una sesión | **Channels** |
 | Ruta de bug desde Slack a un PR | integración **Slack** (`@Claude`) |
 
 El mismo motor y los mismos `CLAUDE.md`/settings/MCP funcionan en todas.
+
+> ⚠️ **Caveat de `/desktop` (plataforma):** solo está disponible en la CLI de **macOS y Windows** con
+> suscripción Claude (no con API key, ni en Bedrock/Vertex/Foundry). Si ejecutas la CLI **dentro de WSL**,
+> Claude Code la trata como **Linux** y el comando **no se ofrece** — aunque la app de Desktop esté
+> instalada en Windows, porque el handoff no cruza la frontera WSL↔Windows. Alternativa: abre el proyecto
+> directamente en la app de Desktop (pestaña *Code*). `claude --teleport` y Remote Control **sí** funcionan
+> desde WSL. (Nota relacionada: `claude mcp add-from-claude-desktop` sí opera en macOS y WSL.)
 
 ---
 
