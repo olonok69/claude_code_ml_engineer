@@ -103,6 +103,12 @@ Las sesiones no están atadas a una superficie: empieza en la web/móvil y tráe
 `claude --teleport`; sigue desde el móvil con **Remote Control**; pasa una sesión del terminal al
 **Desktop** con `/desktop` para revisar diffs.
 
+> ⚠️ **Caveat de plataforma:** `/desktop` solo está disponible en la CLI de **macOS y Windows** (con
+> suscripción Claude; no con API key). Si corres la CLI **dentro de WSL**, Claude Code la ve como
+> **Linux** y el comando **no aparece** — aunque tengas la app de Desktop instalada en Windows. En ese
+> caso, abre el proyecto directamente en la app de Desktop (pestaña *Code*). `--teleport` y Remote
+> Control sí funcionan desde WSL.
+
 🗣️ *"El `CLAUDE.md` que se carga siempre debe ser una onboarding de 30 segundos, no un vertedero. Punteros, no copias."*
 
 ---
