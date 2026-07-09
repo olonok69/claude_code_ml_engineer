@@ -71,6 +71,33 @@ No se hace copia completa de vuelta: machacaría lo que la máquina principal hi
 2. **Docs de `data/` gitignored** → el único físico que viaja; se empaqueta desde la raíz del repo
    (paths repo-relativos) y se le acompaña un `INSTRUCTIONS.md` + `MANIFEST.txt`.
 
+## Dos huecos que cierran unos subcomandos (bring-up + memoria)
+
+Un caso real: el workspace lleva un **grafo de conocimiento de tickets** (skill `/kg`, ver
+[`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)). Al viajar aparecen dos huecos que se
+resuelven con subcomandos idempotentes, no con pasos manuales fáciles de olvidar:
+
+- **Bring-up desde cero (portátil nuevo).** El bundle trae el grafo ya construido, los skills y la memoria,
+  pero **no** el paquete `graphify` ni un intérprete correcto. Un comando lo arregla:
+  ```bash
+  bash data/knowledge-graph/kg_refresh.sh bootstrap   # instala el paquete, fija el intérprete, smoke-test /kg
+  ```
+- **La memoria no viaja en el delta.** El inbound excluye `~/.claude` (es machine-local), así que las notas
+  de memoria que escribiste en el portátil **no volverían**. Modelo *transporte-y-restaura* (mantiene
+  `~/.claude/…/memory` como única fuente de verdad, no un snapshot que la pise en silencio):
+  ```bash
+  # En el PORTÁTIL, antes de armar el delta: parquear la memoria BAJO data/ para que viaje
+  bash data/knowledge-graph/kg_refresh.sh snapshot-memory     # memory/*.md -> data/…/_memory_snapshot/
+  # En la PRINCIPAL, tras aterrizar el delta: fusionar de vuelta (añade nuevos, sobrescribe
+  # cambiados TRAS backup; idénticos = no-op) y reconstruir el grafo
+  bash data/knowledge-graph/kg_refresh.sh restore-memory  &&  /kg-refresh
+  ```
+
+Para el **agente del portátil** (que trabaja con su propia sesión de Claude), un único punto de entrada
+—`LAPTOP_START_HERE.md`— orquesta: restaurar el bundle → `bootstrap` → cómo seguir trabajando igual (skills,
+`CLAUDE.md`, `/kg` history-first) → cómo mandar el incremento de vuelta. El grafo es un artefacto **derivado**:
+nunca viaja de vuelta; se reconstruye donde esté el corpus actual.
+
 ## El landing lo conduce un agente — con guardrails
 
 El `INSTRUCTIONS.md` del delta está escrito **para un agente de coding** en la máquina principal. Su único

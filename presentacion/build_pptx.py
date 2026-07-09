@@ -461,12 +461,12 @@ def build():
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
                    "Excluye venvs / node_modules / caches / .codegraph",
-                   "AWS CLI + CodeGraph + índice: se rehacen en destino (target-setup.sh)"], accent=BLUE)
+                   "En destino: bootstrap (/kg) + target-setup.sh rehacen el tooling"], accent=BLUE)
     panel_bullets(s, 6.8, 2.0, 5.85, 2.6, "Inbound — solo delta",
                   ["El código ya está en GitHub → git fetch",
-                   "Solo los docs gitignored de data/ (unos MB) viajan",
-                   "backup + diff de STATUS.md; STOP si hubo ediciones propias",
-                   "“Descubre, no asumas”: deriva la raíz (ls -d /mnt/*/ILS)"], accent=GREEN)
+                   "Docs gitignored de data/ + memoria (snapshot-memory) viajan",
+                   "En la principal: restore-memory → /kg-refresh reconstruye",
+                   "backup + diff de STATUS.md; STOP si hubo ediciones propias"], accent=GREEN)
     panel_bullets(s, 0.7, 4.75, 11.95, 1.4, "El landing lo conduce un agente — con guardrails",
                   ["Solo no-destructivo (renombrar, no borrar) · git fetch = única op de red",
                    "El humano hace push / merge; el agente prepara y reporta con evidencia (conteos, PRs)"],
@@ -520,9 +520,34 @@ def build():
          space_after=4)
     takeaway(s, "Una consulta en vez de grep→abrir→seguir-import→repetir. Menos contexto, más señal.")
 
-    # ---- 19. Cierre
+    # ---- 19. Grafo de conocimiento de tickets — CodeGraph para tickets/lecciones
     s = new()
-    base(s, "Cierre", "De asistente a sistema", page=19)
+    base(s, "06 · Herramientas", "Grafo de tickets: CodeGraph, pero para tickets", page=19)
+    panel_bullets(s, 0.7, 2.0, 5.85, 2.4, "Grafo sobre los .md del proyecto (data/, interno)",
+                  ["Nodos: tickets + símbolos + invariantes + lecciones",
+                   "Aristas tipadas: references / supersedes / relacionado",
+                   "Comunidades = zonas de peligro (fin-de-carta, títulos…)",
+                   "Determinista, sin LLM en la consulta (lee graph.json)"], accent=BLUE)
+    code(s, 6.8, 2.2, 5.85, 1.9,
+         ["/kg <ticket|tema>   # vecinos  (explain)",
+          "/kg <A> <B>         # camino    (path)",
+          "/kg find <substr>   # nombre de nodo",
+          "/kg-refresh         # reconstruir el grafo"],
+         title="Skill /kg  (envuelve graphify explain/path)")
+    rect(s, 6.8, 4.28, 5.85, 1.12, fill=PANEL, line=STROKE, rounded=True, radius=0.06)
+    text(s, 7.05, 4.4, 5.4, 0.95,
+         [[R("Primero la historia:  ", 11, CORAL, True),
+           R("corre /kg <ticket|tema> ANTES de grep — saca los tickets relacionados + la zona de "
+             "peligro a leer. Apunta a qué leer, no lo sustituye.", 11, TEXT, False)]], line_spacing=1.03)
+    text(s, 0.7, 4.6, 5.85, 1.4,
+         [[R("Reconstruible · consultable en 1 llamada", 13, GREEN, True)],
+          [R("(enganchado a la regla history-first del CLAUDE.md)", 10.5, MUTED, False)]],
+         space_after=4)
+    takeaway(s, "El grafo es el mapa; el agente, el guía. Recall de zonas de peligro que si no tendrías que recordar.")
+
+    # ---- 20. Cierre
+    s = new()
+    base(s, "Cierre", "De asistente a sistema", page=20)
     cards(s, [
         ("1", "Instalar", "Una línea; interactivo para pensar, -p para automatizar."),
         ("2", "Memoria & sesiones", "Contexto lean de dos niveles; sesiones que viajan."),
