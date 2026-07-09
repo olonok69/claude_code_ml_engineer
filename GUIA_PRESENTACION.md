@@ -279,6 +279,10 @@ push. Un review-bot detecta un caso de columna a la izquierda → se añade el t
   tests** (58% menos tool calls en sus benchmarks). Es el **primer** tool de navegación; el proyecto por
   defecto se fija con `--path` en la config MCP (o se pasa `projectPath` para otro repo — ya indexamos
   también `monolith` y `frontend`).
+- **Grafo de conocimiento de tickets** (`/kg`, ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md)) —
+  **CodeGraph, pero para tickets y lecciones**: un grafo sobre los writeups por ticket + "sharp edges" +
+  memoria. `/kg <ticket|tema>` devuelve, **sin LLM**, los tickets relacionados + la zona de peligro a leer —
+  el primer paso *history-first* antes de `grep`. Se reconstruye con `/kg-refresh`; vive bajo `data/` gitignored.
 - **Serena · Playwright · AWS CLI** — navegación semántica, verificación del contrato, diagnóstico determinista.
 
 ### Los mismos principios en ops: sincronizar máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
@@ -298,6 +302,10 @@ la metodología no es solo para código:
 - **El tooling también se sincroniza:** el índice `.codegraph/` se **excluye** del tarball (es local, con
   rutas absolutas) y se reconstruye en destino; un `target-setup.sh` idempotente reinstala el CLI de
   CodeGraph, actualiza GSD solo si va atrasado y **corrige el `--path` del MCP** a la raíz real del portátil.
+- **Bring-up y memoria, con subcomandos idempotentes:** en un portátil nuevo, `kg_refresh.sh bootstrap`
+  instala lo que no va en el bundle y verifica `/kg`; y como la memoria (`~/.claude`) **no** viaja en el delta,
+  `snapshot-memory` la parquea bajo `data/` para que viaje y `restore-memory` la fusiona de vuelta (con backup)
+  antes de `/kg-refresh`. Un `LAPTOP_START_HERE.md` es el punto de entrada único para el agente del portátil.
 
 🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
 

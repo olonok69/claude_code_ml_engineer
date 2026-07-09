@@ -292,6 +292,24 @@ re-abras ese fichero). El MCP **no tiene proyecto por defecto** salvo que fijes 
 Complementa a Serena: `find_referencing_symbols` sigue siendo el chequeo **preciso** antes de renombrar/borrar
 (CodeGraph `impact` mezcla métodos homónimos; Serena los desambigua por clase).
 
+### Grafo de conocimiento de tickets — CodeGraph, pero para tickets/lecciones (ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md))
+Si CodeGraph indexa el *código*, este skill (`/kg`) indexa la **memoria del proyecto** — writeups por ticket,
+"sharp edges", runbooks, notas de memoria — en un grafo navegable. Nodos = tickets + símbolos + invariantes;
+aristas **tipadas** (`references`/`supersedes`/`conceptually_related_to`, con `confidence`); comunidades = zonas
+de peligro. **Determinista, sin LLM en la consulta:**
+```bash
+/kg <ticket|tema>     # vecinos de un nodo   (graphify explain)  ← el uso más común
+/kg <A> <B>           # camino más corto A<->B (graphify path)
+/kg find <substr>     # descubrir el nombre exacto de un nodo
+/kg-refresh           # reconstruir: manifest -> stage -> /graphify (subagentes) -> finalize + leak-check
+```
+Se construye con `graphify` sobre un corpus curado de `.md` (un `manifest.txt` diffeable). **Gotcha:** `graphify`
+respeta `.gitignore` y todo `data/` lo está → se monta el corpus en un **scratch fuera del repo** y se copian
+los artefactos de vuelta. Está **enganchado a la regla history-first del `CLAUDE.md`**: corre `/kg <ticket|tema>`
+*antes* de hacer grep en `data/changes/`; una llamada saca los tickets relacionados + la zona de peligro a leer
+(apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es **recall en zonas densas**; aristas
+`EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo bajo `data/` gitignored (nombres internos → interno).
+
 ### Runbook de ops: sincronizar el workspace entre máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
 Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops. **Asimétrico:**
 
@@ -312,6 +330,13 @@ cp data/changes/STATUS.md data/changes/STATUS.md.mainbak   # backup ANTES
 tar -xzf "$TARBALL" -C "$REPO"                         # solo los docs gitignored de data/
 diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # ¿solo adiciones? quedarse. ¿ediciones propias? STOP
 ```
+
+**Dos huecos, dos subcomandos idempotentes** (el workspace lleva un grafo `/kg` — subsección anterior): en un portátil
+nuevo, `kg_refresh.sh bootstrap` instala el tooling que no va en el bundle y fija el intérprete; y como la
+memoria (`~/.claude`) **no** viaja en el delta, `snapshot-memory` la parquea bajo `data/` (para que viaje) y
+`restore-memory` la fusiona de vuelta con backup en la principal, antes de `/kg-refresh`. Punto de entrada
+único para el agente del portátil: `LAPTOP_START_HERE.md` (restaurar → `bootstrap` → seguir igual → mandar
+delta). El grafo es un artefacto **derivado**: nunca viaja de vuelta; se reconstruye donde esté el corpus.
 
 Guardrails (el landing lo conduce **un agente**, con un `INSTRUCTIONS.md` escrito *para* él): solo
 no-destructivo (renombrar, no borrar; nunca dos ops de movimiento a la vez en un mount Windows); sin
