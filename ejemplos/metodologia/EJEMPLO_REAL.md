@@ -14,9 +14,12 @@ claramente escrito."* Adjunta el documento y el JSON del `status endpoint` (el c
 ### 1 · Orientar (history-first Y status-first)
 
 **Claude, primero, sin tocar código:**
-- Lee `data/changes/STATUS.md` y busca tickets previos que tocaran "ley aplicable" o el extractor de PDF.
-  → Encuentra un ticket cerrado con un `SHARP_EDGES.md` entry: *"el corte de fin de provisión en el path
-  determinista se aplica en 3 sitios; no unificar."* Contexto que **restringe** el fix.
+- **`/kg "fin de provisión"`** (grafo de tickets, determinista, sin LLM) → devuelve al instante la **zona de
+  peligro**: los tickets que comparten ese código (el corte de fin de provisión, el look-ahead) + el
+  `SHARP_EDGES.md` entry *"el corte se aplica en 3 sitios; no unificar."* Eso es lo que **restringe** el fix
+  — y lo que, sin el grafo, tendrías que *acordarte* de buscar a mano. Es el paso *history-first* antes de grep.
+- Lee el writeup del ticket que `/kg` señaló (`data/changes/<ticket>/<ticket>.md`) para el *porqué* completo,
+  y `STATUS.md` para el estado en vuelo.
 - `git branch -a` + `gh pr list` → confirma que no hay un PR abierto tocando este extractor y cuál es la
   base correcta para ramificar.
 
@@ -108,7 +111,7 @@ re-caer en el mismo agujero.
 
 | Etapa | Herramienta |
 |---|---|
-| Orientar | `STATUS.md`/ledgers · `git` · `gh` |
+| Orientar | **`/kg`** (grafo de tickets → zona de peligro) · `STATUS.md`/ledgers · `git` · `gh` |
 | Triaje / contrato | **Playwright** / F12 sobre el `status endpoint` |
 | Investigar | **Serena** (símbolos) · **CodeGraph** (rutas + blast radius) · **oráculo determinista** (`_diag_*.py`) |
 | Implementar/verificar | pytest (RED→GREEN, scoped + regresión) · re-extracción local del contrato |

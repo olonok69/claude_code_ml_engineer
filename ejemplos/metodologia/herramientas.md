@@ -15,6 +15,11 @@ es caro (tokens) e impreciso. CodeGraph devuelve el símbolo, sus callers, sus t
 cambiarlo** en un solo round-trip; Serena desambigua un símbolo homónimo por clase antes de un rename —
 donde el `impact` plano de CodeGraph los mezclaría.
 
+> **Dos grafos, dos dominios.** CodeGraph indexa el *código* (símbolos, llamadas, blast radius); el skill
+> **`/kg`** indexa la *memoria del proyecto* —tickets, "sharp edges", lecciones— para el paso *history-first*:
+> qué se rompió antes en esta zona, qué invariantes no tocar. Los dos son deterministas y "primero, antes de
+> grep". Detalle del segundo: [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md).
+
 ## Tabla de prevalencia
 
 | Necesito… | Herramienta preferida | Por qué / regla |
@@ -27,11 +32,12 @@ donde el `impact` plano de CodeGraph los mezclaría.
 | Diagnosticar entorno (logs, config de Lambda, colas) | **AWS CLI** (CloudWatch, `aws lambda get-function`, SQS/DLQ) | Herramienta de debugging de primera clase, no último recurso. |
 | Docs de una librería externa | **Context7** | En vez de fiarse del corte de entrenamiento del modelo. |
 | Estado de git / PRs para orientarse | **`gh` CLI**, `git branch -a`, `git log` | "status-first": no ramificar de la base equivocada. |
+| "¿Qué tickets/lecciones rodean este área?" | **`/kg`** (grafo de tickets — [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)) | "history-first": `/kg <ticket\|tema>` saca, **sin LLM**, los tickets relacionados + la zona de peligro a leer, ANTES de hacer grep en `data/changes/`. Es CodeGraph, pero para tickets. |
 | Trabajo genuinamente independiente en paralelo | **Subagentes** (`Task`: Explore/Plan/…) | Sin ensuciar el contexto principal. |
 
 ## El orden importa (barato → caro, determinista → probabilístico)
 
-1. **Orientación:** markdown local (`STATUS.md`, ledgers) + `git`/`gh` — coste 0.
+1. **Orientación:** markdown local (`STATUS.md`, ledgers) + `git`/`gh` + **`/kg`** (grafo de tickets: los tickets y la zona de peligro relacionados, sin LLM, antes de grep) — coste ~0.
 2. **Navegación:** CodeGraph `codegraph_explore` (survey, 1 llamada) → Serena `find_referencing_symbols` (chequeo preciso antes de renombrar) — coste bajo, determinista.
 3. **Diagnóstico:** oráculo determinista (parser/validador) — coste 0, reproducible.
 4. **Verificación de entorno:** AWS CLI — read-only, determinista.

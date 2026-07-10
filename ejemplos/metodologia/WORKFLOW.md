@@ -31,6 +31,9 @@
 1. **Orientar — history-first Y status-first.** Antes de tocar nada, el agente lee el registro durable
    (`data/changes/STATUS.md`, ledgers por-ticket) **y** el estado vivo (`git branch -a`, `gh pr list`).
    Saltarse esto es la causa #1 de retrabajo: ramificar de la base equivocada o duplicar trabajo en curso.
+   El *primer paso* history-first es **`/kg <ticket|tema>`** —un grafo de tickets/lecciones, "CodeGraph pero
+   para tickets", determinista— que saca los tickets relacionados + la **zona de peligro** a leer antes de
+   hacer grep (ver [`herramientas.md`](./herramientas.md) y [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)).
 2. **Triaje inbound — ¿el síntoma es real en el contrato?** Se abre el JSON del `status endpoint` del
    documento afectado (lo aporta QA, o se reproduce con Playwright/F12 en el navegador). Si el síntoma no
    está ahí → el bug es aguas abajo → **push back con evidencia, no escribir código.**
@@ -57,7 +60,8 @@
     leen como trabajo del autor humano, sin atribución del agente.
 11. **Revisión automática + Persistir.** Los hallazgos de un review-bot se triagean como los de un humano
     (confirmar reales, follow-up; descartar falsos *con motivo*). Al cerrar: actualizar registros y
-    memoria lean; codificar lecciones reutilizables en el `PLAYBOOK.md`.
+    memoria lean; codificar lecciones reutilizables en el `PLAYBOOK.md`; y cuando aterrizan tickets nuevos,
+    reconstruir el grafo con **`/kg-refresh`** para que la orientación de la siguiente tarea (etapa 1) lo vea.
 
 ## Cómo está organizado el trabajo (la memoria de dos niveles)
 
@@ -81,6 +85,8 @@ trabajo, decisiones bloqueadas, y **punteros** de una línea. Es la onboarding d
 > `extractors/` = el *qué*; `<TICKET>/` = el *porqué*. Todo `data/` está gitignored.
 > Regla write-once: cada dato en un único ledger canónico; el `CLAUDE.md` apunta, no copia.
 > (Cuando se hinchó, lo recortamos **~73% sin pérdida de información**.)
+> Sobre estos ledgers se construye el **grafo de tickets** (`/kg`, [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)):
+> un índice navegable —tickets, sharp-edges, lecciones— que la etapa 1 consulta *antes* de grep.
 
 Ver [`herramientas.md`](./herramientas.md) para la prevalencia de tools y [`EJEMPLO_REAL.md`](./EJEMPLO_REAL.md)
 para un caso concreto de principio a fin.
