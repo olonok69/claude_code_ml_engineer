@@ -372,7 +372,7 @@ def build():
     s = new()
     base(s, "06 · Metodología real", "El flujo real de 11 etapas", page=13)
     stages = [
-        ("1", "Orientar — history-first Y status-first", False),
+        ("1", "Orientar: /kg + history-first + status-first", False),
         ("2", "Triaje inbound: ¿síntoma en el contrato?", True),
         ("3", "Regresión vs. pre-existente (probarlo)", True),
         ("4", "Investigar: oráculo determinista barato", False),
@@ -410,7 +410,7 @@ def build():
              "para el chequeo preciso antes de renombrar. ", 12, TEXT, True),
            R("Orden: barato → caro, determinista → probabilístico.", 12, MUTED, False)]])
     rows = [
-        ("Orientar", "STATUS.md / ledgers · git · gh", "coste 0"),
+        ("Orientar", "/kg (grafo de tickets → zona de peligro) · STATUS.md · git · gh", "coste 0"),
         ("Navegar (survey)", "CodeGraph codegraph_explore — fuente + rutas + blast radius + cobertura", "1 llamada"),
         ("Refactor-check", "Serena find_referencing_symbols — desambigua por clase (antes de renombrar)", "preciso"),
         ("Diagnosticar", "Oráculo determinista: parser / validador / _diag_*.py", "coste 0"),
@@ -439,7 +439,7 @@ def build():
            R("“un campo sale vacío en la UI, pero está escrito en el PDF.”", 12.5, TEXT, False)]],
          anchor=MSO_ANCHOR.MIDDLE)
     steps = [
-        ("Orientar", "STATUS.md revela un SHARP_EDGE que restringe el fix; git/gh dan la base correcta."),
+        ("Orientar", "/kg saca la zona de peligro (un SHARP_EDGE que restringe el fix); git/gh dan la base."),
         ("Contrato", "El campo está vacío en el JSON del endpoint (Playwright/F12) → el Lambda es responsable."),
         ("Provenance", "Re-extraer en la base previa: ya salía vacío → pre-existente, no regresión."),
         ("Investigar", "Serena + CodeGraph localizan el detector; un _diag_pdf.py determinista da la causa: SIN LLM."),
