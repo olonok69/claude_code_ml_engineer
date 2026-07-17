@@ -238,7 +238,9 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 4. **Investigar** — **oráculo determinista** (parser/validador) primero; el LLM se reserva para verificar.
 5. **Plan** — proponer opciones + trade-offs; **acuerdo humano** explícito antes de tocar código.
 6. **Implementar** — TDD: RED (por el motivo correcto) → GREEN, cambio mínimo.
-7. **Verificar** — unit + scoped + regresión + **gate outbound**: reproducir el contrato arreglado en local.
+7. **Verificar** — unit + scoped + regresión + **gate outbound** (tres checks): reproducir el contrato en la
+   **etapa real de salida** (el *wrapper* que reconstruye la salida, no una función interna), que el JSON
+   local case, y verificarlo **dentro de la imagen desplegada** — los tests en verde no prueban lo que se envía.
 8. **Documentar** — porqué + qué + handover + criterios de aceptación, cada cosa **una vez**.
 9. **Sanitizar** — escanear las **líneas añadidas** por nombres/IDs/secretos/atribución del agente.
 10. **Handoff** — el humano (o un tool suyo, p. ej. Cursor) hace push/PR/deploy. El agente **nunca**.
@@ -259,6 +261,7 @@ renombrar/borrar; grep/Read solo para literales."* Orden barato→caro:
 | Diagnosticar | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
 | Entorno (logs, config) | **AWS CLI** — herramienta de debugging de primera clase |
 | Contrato de salida | **Playwright** / F12 sobre el endpoint que ve el consumidor |
+| Verificar lo desplegado | **Docker** — repro dentro de la imagen del runtime (montar el `src`, re-correr); los tests en verde ≠ lo enviado |
 | Solo al final | La tirada del **LLM** — para *verificar* el fix, no para diagnosticar |
 
 ### Un ejemplo real (ver [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
@@ -267,8 +270,8 @@ Bug: *"un campo sale vacío en la UI pero está en el PDF."* → Orientar (STATU
 pre-existente, no regresión → Serena+CodeGraph localizan el detector de fin de provisión, y un
 `_diag_pdf.py` determinista revela la causa (desbordamiento a 2ª columna) **sin una sola llamada al LLM**
 → plan aprobado → test RED → fix keyed en la *propiedad estructural* (no en el cliente) → regresión
-byte-idéntica (prueba no-op) + contrato reproducido en local → documentar → sanitizar → el humano hace el
-push. Un review-bot detecta un caso de columna a la izquierda → se añade el test y va al `PLAYBOOK`.
+byte-idéntica (prueba no-op) + contrato reproducido en local (vía *wrapper*) y **dentro de la imagen
+desplegada** → documentar → sanitizar → el humano hace el push. Un review-bot detecta un caso de columna a la izquierda → se añade el test y va al `PLAYBOOK`.
 
 ### El tooling que lo encarna
 - **GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método **hecho tooling**: ciclo *discutir → planificar
@@ -284,6 +287,9 @@ push. Un review-bot detecta un caso de columna a la izquierda → se añade el t
   memoria. `/kg <ticket|tema>` devuelve, **sin LLM**, los tickets relacionados + la zona de peligro a leer —
   el primer paso *history-first* antes de `grep`. Se reconstruye con `/kg-refresh`; vive bajo `data/` gitignored.
 - **Serena · Playwright · AWS CLI** — navegación semántica, verificación del contrato, diagnóstico determinista.
+- **Kit portable de metodología** — el método no está atado a este proyecto: hay un *starter-kit* (plantillas
+  de `STATUS`/`SHARP_EDGES`/handover/QA + un script de bootstrap) para llevar estos guardrails a **otro repo**
+  o a **GitHub Copilot**. La disciplina viaja; las tools concretas (Serena, CodeGraph, `/kg`) se sustituyen.
 
 ### Los mismos principios en ops: sincronizar máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
 Un runbook real que usamos para mover el workspace entre la máquina principal y el portátil. Demuestra que
@@ -291,6 +297,10 @@ la metodología no es solo para código:
 - **Sincronización asimétrica:** outbound = **copia completa** (un tarball: workspace + `~/.claude`/`.aws`/
   `.ssh`, con `-h` para dereferenciar symlinks, excluyendo venvs/node_modules); inbound = **solo delta**
   (el código ya está en GitHub → `git fetch`; solo los docs gitignored de `data/`, unos MB, viajan).
+- **Copiar al USB tiene gotchas reales:** WSL no auto-monta un USB conectado tras arrancar
+  (`sudo mount -t drvfs F: /mnt/f`); y la copia se **verifica byte a byte** (`stat -c %s` en origen y destino
+  coinciden) antes de expulsar — evidencia, no "parece que cabe". El bundle **crece** (~0.9→~1.5 GB); el USB
+  al alza.
 - **Memoria durable, bajo demanda:** el runbook **no** vive en el `CLAUDE.md` always-loaded — hay un
   puntero de una línea; se carga solo cuando viajas.
 - **El landing lo conduce un agente con guardrails:** el `INSTRUCTIONS.md` del delta está escrito *para un

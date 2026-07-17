@@ -73,8 +73,15 @@ El humano **aprueba** antes de que se escriba código. La opción rechazada qued
 - Suite scoped del defecto → GREEN.
 - Batería de regresión canónica → los documentos de referencia salen **byte-idénticos** (prueba **no-op**:
   el fix no toca lo que no debe).
-- **Gate outbound:** re-extraer el fixture en local y producir un JSON con la forma del `status endpoint`,
-  con el campo "ley aplicable" **ya relleno**. *Sin este JSON local, no hay handover.*
+- **Gate outbound — tres comprobaciones:**
+  1. **Reproducir en la etapa real de salida:** a través del **wrapper** que reconstruye el contrato, no de
+     `extract()`. (Un fix en la función interna lo puede descartar el rebuild del wrapper y verse "correcto"
+     en local mientras la salida enviada sigue mal.)
+  2. **Coincidencia local:** el JSON de esa etapa tiene la forma del `status endpoint` con "ley aplicable"
+     **ya relleno**. *Sin este JSON local, no hay handover.*
+  3. **Dentro de la imagen desplegada:** descargar (o construir) la **misma imagen** que corre el runtime,
+     montar el `src` arreglado y re-correr el repro → byte por byte igual que en local. *Los tests en verde
+     no son prueba de lo que se despliega.*
 
 ### 8 · Documentar
 
@@ -114,11 +121,12 @@ re-caer en el mismo agujero.
 | Orientar | **`/kg`** (grafo de tickets → zona de peligro) · `STATUS.md`/ledgers · `git` · `gh` |
 | Triaje / contrato | **Playwright** / F12 sobre el `status endpoint` |
 | Investigar | **Serena** (símbolos) · **CodeGraph** (rutas + blast radius) · **oráculo determinista** (`_diag_*.py`) |
-| Implementar/verificar | pytest (RED→GREEN, scoped + regresión) · re-extracción local del contrato |
+| Implementar/verificar | pytest (RED→GREEN, scoped + regresión) · re-extracción local del contrato (vía **wrapper**) · **Docker** (repro dentro de la imagen desplegada) |
 | Handoff | el humano / Cursor (push, PR, deploy) — **nunca el agente** |
 
 ## La moraleja
 
 Ninguna etapa dice "pídele al LLM que lo arregle". La potencia del modelo se canaliza a través de **gates
-deterministas** (contrato, oráculo, batería de tests, prueba no-op, escaneo de sanitización) y el humano
-conserva las decisiones y las acciones externas. Eso es lo que convierte capacidad bruta en salida fiable.
+deterministas** (contrato vía wrapper, oráculo, batería de tests, prueba no-op, verificación en la imagen
+desplegada, escaneo de sanitización) y el humano conserva las decisiones y las acciones externas. Eso es lo
+que convierte capacidad bruta en salida fiable.

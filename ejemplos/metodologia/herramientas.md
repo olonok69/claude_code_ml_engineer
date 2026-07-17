@@ -28,6 +28,7 @@ donde el `impact` plano de CodeGraph los mezclaría.
 | Chequeo preciso antes de un rename/borrado | **Serena** `find_referencing_symbols` | **Obligatorio**; desambigua homónimos por clase (el `impact` de CodeGraph los mezcla). |
 | Cuerpo de un símbolo / overview de un fichero de 5k líneas | **Serena** `find_symbol body=true` / `get_symbols_overview` | O la fuente que ya imprimió `codegraph_explore`. |
 | Verificar el **contrato de salida** (lo que ve el consumidor) | **Playwright** / F12 en el navegador | Subir un doc → "Review & Import" → inspeccionar el JSON del `status endpoint`. El bug se reproduce ahí. |
+| Verificar **dentro de lo que se despliega** | **Docker** (descargar/construir la imagen del runtime, montar el `src`, re-correr el repro) | Los tests en verde ≠ prueba de lo enviado. El deliverable se verifica en la **misma imagen** que corre en producción, y en la **etapa real de salida** (el *wrapper*, no una función interna `extract()`). |
 | Diagnosticar causa raíz **barato** | **Oráculo determinista** (parser, validador, `_diag_*.py`) | Misma respuesta siempre, coste 0. Antes de gastar en el LLM. |
 | Diagnosticar entorno (logs, config de Lambda, colas) | **AWS CLI** (CloudWatch, `aws lambda get-function`, SQS/DLQ) | Herramienta de debugging de primera clase, no último recurso. |
 | Docs de una librería externa | **Context7** | En vez de fiarse del corte de entrenamiento del modelo. |
@@ -42,7 +43,9 @@ donde el `impact` plano de CodeGraph los mezclaría.
 3. **Diagnóstico:** oráculo determinista (parser/validador) — coste 0, reproducible.
 4. **Verificación de entorno:** AWS CLI — read-only, determinista.
 5. **Verificación del contrato:** Playwright/F12 — reproducir el síntoma en la salida real.
-6. **Solo al final:** la tirada del LLM (metered, probabilística) para verificar el fix acabado.
+6. **Gate outbound:** reproducir en la **etapa real de salida** (el *wrapper*, no una función interna) y
+   **dentro de la imagen desplegada** (Docker) — no basta con "los tests pasan".
+7. **Solo al final:** la tirada del LLM (metered, probabilística) para verificar el fix acabado.
 
 > La inversión clásica —"tirar del modelo para diagnosticar"— es justo lo que este orden evita: el modelo
 > es caro y no determinista; úsalo para *verificar*, no para *diagnosticar*.
