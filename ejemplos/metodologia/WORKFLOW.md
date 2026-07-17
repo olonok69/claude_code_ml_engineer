@@ -47,8 +47,14 @@
 6. **Implementar — TDD, mínimo.** Test que falla → confirmar RED por el motivo correcto → el código
    mínimo que pasa. Sin features especulativas.
 7. **Verificar — contra el contrato, con evidencia.** Suite unit + scoped del defecto + batería de
-   regresión canónica. Luego el **gate outbound**: re-extraer el fixture en local y reproducir el
-   contrato *arreglado*. *"Sin prueba local del contrato, no está hecho."*
+   regresión canónica. Luego el **gate outbound**, **tres comprobaciones obligatorias**: (1) reproducir en
+   la **etapa real de salida** —a través del **wrapper** que reconstruye el contrato, no de la función
+   interna `extract()` (un fix en la interna lo puede descartar en silencio el rebuild del wrapper y verse
+   "correcto" en local mientras lo enviado está mal)—; (2) ese JSON local coincide con la forma del contrato,
+   con el síntoma resuelto; (3) verificarlo **dentro de la imagen desplegada** (la misma que corre el
+   runtime): descargarla o construirla, montar el `src` arreglado y re-correr el repro → byte por byte igual
+   que en local. *"Los tests en verde no prueban lo que se despliega; sin repro local del contrato Y en la
+   imagen, no está hecho."*
 8. **Documentar — el porqué, el qué, el handover.** Writeup por-ticket (causa raíz → fix → evidencia),
    update del ledger de estado, criterios de aceptación para QA, nota de handover. Cada cosa **una vez**,
    en su sitio canónico.

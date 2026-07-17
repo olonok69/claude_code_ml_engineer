@@ -33,7 +33,9 @@ ls -ld /home/$USER/.aws /home/$USER/.gnupg /home/$USER/.ssh /home/$USER/.claude
 ```
 
 Una **tabla de "machine facts"** documenta lo que varía (raíz del workspace, si `~/.aws` es symlink o
-dir real, si `~/.gnupg` existe, tamaño del último tar) — con un "confirmar antes de confiar".
+dir real, si `~/.gnupg` existe, la lista de repos, tamaño del último tar) — con un "confirmar antes de
+confiar". Deriva con el tiempo: la lista de repos **crece** (un repo nuevo se sumó sin tocar el comando,
+porque el `-C` toma el directorio entero), y el tamaño del tar también. Re-verifícala en cada viaje.
 
 ## Outbound — copia completa (comando real, sanitizado)
 
@@ -52,8 +54,25 @@ tar -czhf ~/ils-migration-$STAMP.tar.gz \
   --exclude='*/.ruff_cache' --exclude='*/.mypy_cache' --exclude='*.pyc' \
   -C "$(dirname "$WS")" "$(basename "$WS")" \
   -C /home/$USER .claude .aws .ssh
-ls -lh ~/ils-migration-$STAMP.tar.gz   # se esperan cientos de MB; si son KB, el -C estaba mal
+ls -lh ~/ils-migration-$STAMP.tar.gz   # se espera ~1 GB+ (crece); si son KB, el -C estaba mal
 ```
+
+**Copiar al USB — gotchas reales (de un viaje):**
+
+- **WSL no auto-monta un USB.** Un USB que conectas *después* de arrancar WSL no aparece solo en
+  `/mnt/<letra>` (el punto de montaje existe pero vacío). Hay que montarlo a mano:
+  ```bash
+  sudo mount -t drvfs F: /mnt/f    # sustituye por la letra real del USB en Windows
+  ```
+- **Verifica byte a byte antes de expulsar.** El mount es 9p (lento); tras `cp`, `sync` y compara tamaños
+  exactos —nada de "parece que cabe":
+  ```bash
+  cp ~/ils-migration-$STAMP.tar.gz /mnt/f/ && sync
+  stat -c %s ~/ils-migration-$STAMP.tar.gz /mnt/f/ils-migration-$STAMP.tar.gz   # deben coincidir
+  ```
+- **Dimensiona el USB al alza.** El bundle **crece** al sumarse repos (excluyendo venvs/caches: ~0.9 GB →
+  ~1.5 GB en unas semanas). Un USB de 4 GB cabe *un* bundle, sin margen para dos.
+- **Guarda un tar completo previo** como red de seguridad antes de cualquier extracción en destino.
 
 En el portátil: **parquear** (renombrar, no borrar) cualquier workspace previo, extraer, y **recrear los
 pesados excluidos** (`python -m venv`, `npm install`) por repo que vayas a ejecutar. El **binario** del

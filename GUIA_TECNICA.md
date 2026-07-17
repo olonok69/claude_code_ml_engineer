@@ -246,9 +246,19 @@ Todo el material profundo (flujo de 11 etapas, ejemplo real end-to-end, prevalen
 Agente = colaborador disciplinado; la autonomía se gana por-decisión. 11 etapas encadenadas por **gates
 deterministas**: orientar (history+status) → triaje inbound en el **contrato de salida** → regresión vs
 pre-existente → investigar con **oráculo determinista** (antes de la tirada de pago) → plan+acuerdo →
-TDD RED→GREEN → verificar (unit+scoped+regresión+contrato) → documentar → **sanitizar** (líneas añadidas)
+TDD RED→GREEN → verificar (unit+scoped+regresión+contrato vía *wrapper* Y dentro de la imagen desplegada)
+→ documentar → **sanitizar** (líneas añadidas)
 → handoff (el humano hace push/PR/deploy) → revisión automática + persistir.
 Caso concreto de principio a fin: [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md).
+
+> **El gate outbound son tres checks** (no solo "los tests pasan"): (1) reproducir en la **etapa real de
+> salida** —el *wrapper* que reconstruye el contrato, no una función interna `extract()`—; (2) el JSON local
+> casa con el contrato; (3) verificarlo **dentro de la imagen desplegada** (descargar/construir la imagen del
+> runtime, montar el `src`, re-correr). Los tests en verde no son prueba de lo que se despliega.
+
+> **Portable:** el método se empaqueta como un *starter-kit* (plantillas de `STATUS`/`SHARP_EDGES`/handover/QA
+> + un script de bootstrap) para llevarlo a **otro repo** o a **GitHub Copilot** — la disciplina (plan→acuerdo,
+> contrato, gates de evidencia, el humano hace lo externo) es agnóstica de la herramienta.
 
 ### Prevalencia de tools (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
 El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden** (barato→caro,
@@ -260,6 +270,7 @@ Refactor-chk -> Serena find_referencing_symbols (desambigua por clase)  OBLIGATO
 Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (coste 0, reproducible)
 Entorno      -> AWS CLI (CloudWatch, lambda get-function, SQS/DLQ)   (read-only)
 Contrato     -> Playwright / F12 sobre el endpoint de salida
+Desplegado   -> Docker: repro dentro de la imagen del runtime (etapa real = wrapper); tests verdes != lo enviado
 Solo al final-> la tirada del LLM, para VERIFICAR el fix (no para diagnosticar)
 ```
 
@@ -321,6 +332,8 @@ tar -czhf ~/ils-migration-$(date +%Y%m%d).tar.gz \
   --exclude='*/node_modules' --exclude='*/.codegraph' --exclude='*/.venv' --exclude='*/__pycache__' --exclude='*.pyc' \
   -C "$(dirname "$WS")" "$(basename "$WS")" \
   -C /home/$USER .claude .aws .ssh
+# USB: WSL no auto-monta un USB conectado tras arrancar -> sudo mount -t drvfs F: /mnt/f ; copiar, sync,
+# y verificar byte a byte (stat -c %s origen destino coinciden) antes de expulsar. El bundle crece (~1.5 GB).
 # En destino: bash data/machine-sync/target-setup.sh  -> reinstala el CLI de CodeGraph, actualiza GSD si va
 # atrasado, corrige el --path del MCP a la raíz real del portátil, y reconstruye el índice (codegraph init).
 

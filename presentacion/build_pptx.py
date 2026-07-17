@@ -366,6 +366,11 @@ def build():
     panel_bullets(s, 6.8, 3.4, 5.85, 2.05, "El humano posee",
                   ["Decisiones go/no-go y el scope", "Toda acción externa: push, PR, deploy",
                    "La aprobación del plan"], accent=GREEN)
+    text(s, 0.72, 5.62, 11.9, 0.5,
+         [[R("Portable:  ", 11.5, CORAL, True),
+           R("el método se empaqueta como un starter-kit (plantillas + bootstrap) para llevarlo a otro repo "
+             "o a GitHub Copilot — la disciplina es agnóstica de la herramienta.", 11, MUTED, False)]],
+         line_spacing=1.03)
     takeaway(s, "El modelo no gana confianza gratis: la gana decisión a decisión, con evidencia.")
 
     # ---- 13. Metodología: el flujo de 11 etapas
@@ -378,7 +383,7 @@ def build():
         ("4", "Investigar: oráculo determinista barato", False),
         ("5", "Plan → acuerdo humano explícito", True),
         ("6", "Implementar: TDD RED → GREEN, mínimo", False),
-        ("7", "Verificar + gate outbound (contrato)", True),
+        ("7", "Verificar: contrato (wrapper) + imagen desplegada", True),
         ("8", "Documentar — cada cosa una vez", False),
         ("9", "Sanitizar — líneas añadidas", False),
         ("10", "Handoff: el humano hace push / PR", False),
@@ -443,7 +448,7 @@ def build():
         ("Contrato", "El campo está vacío en el JSON del endpoint (Playwright/F12) → el Lambda es responsable."),
         ("Provenance", "Re-extraer en la base previa: ya salía vacío → pre-existente, no regresión."),
         ("Investigar", "Serena + CodeGraph localizan el detector; un _diag_pdf.py determinista da la causa: SIN LLM."),
-        ("Fix + verificar", "Test RED → fix por propiedad estructural (no cliente) → regresión byte-idéntica + contrato local."),
+        ("Fix + verificar", "Test RED → fix estructural (no cliente) → regresión no-op + contrato local (wrapper) + dentro de la imagen desplegada."),
         ("Handoff", "Sanitizar → el humano hace push/PR. Un bot detecta un caso más → test + PLAYBOOK."),
     ]
     for i, (tag, desc) in enumerate(steps):
@@ -457,17 +462,18 @@ def build():
     # ---- 16. Metodología: un runbook de ops (sincronizar máquinas)
     s = new()
     base(s, "06 · Metodología real", "Un runbook real: sincronizar máquinas", page=16)
-    panel_bullets(s, 0.7, 2.0, 5.85, 2.6, "Outbound — copia completa",
+    panel_bullets(s, 0.7, 2.0, 5.85, 2.7, "Outbound — copia completa",
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
                    "Excluye venvs / node_modules / caches / .codegraph",
+                   "USB: mount manual en WSL + verificar byte a byte",
                    "En destino: bootstrap (/kg) + target-setup.sh rehacen el tooling"], accent=BLUE)
-    panel_bullets(s, 6.8, 2.0, 5.85, 2.6, "Inbound — solo delta",
+    panel_bullets(s, 6.8, 2.0, 5.85, 2.7, "Inbound — solo delta",
                   ["El código ya está en GitHub → git fetch",
                    "Docs gitignored de data/ + memoria (snapshot-memory) viajan",
                    "En la principal: restore-memory → /kg-refresh reconstruye",
                    "backup + diff de STATUS.md; STOP si hubo ediciones propias"], accent=GREEN)
-    panel_bullets(s, 0.7, 4.75, 11.95, 1.4, "El landing lo conduce un agente — con guardrails",
+    panel_bullets(s, 0.7, 4.82, 11.95, 1.4, "El landing lo conduce un agente — con guardrails",
                   ["Solo no-destructivo (renombrar, no borrar) · git fetch = única op de red",
                    "El humano hace push / merge; el agente prepara y reporta con evidencia (conteos, PRs)"],
                   accent=CORAL)

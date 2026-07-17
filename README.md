@@ -25,7 +25,7 @@ agente disciplinado).
 - [`ejemplos/mcp/`](./ejemplos/mcp/) — `.mcp.json` con scopes y secretos por entorno.
 - [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill.
 - [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling.
-- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/oráculo determinista) y un **runbook de ops real** (sincronizar el workspace entre máquinas) + el diagrama del flujo.
+- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), un **runbook de ops real** (sincronizar el workspace entre máquinas) y una nota de que el método es un **kit portable** (a otro repo / GitHub Copilot) + el diagrama del flujo.
 - [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) — las dos herramientas de metodología, en profundidad.
 
 ## Regenerar el deck

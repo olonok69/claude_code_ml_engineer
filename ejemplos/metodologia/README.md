@@ -32,4 +32,14 @@ la capacidad bruta del modelo en salida fiable.
 - **`/kg`** (grafo de tickets, [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)) es la capa de
   **orientación** (etapa 1): CodeGraph pero para tickets/lecciones — saca la zona de peligro antes de grep.
 - **CodeGraph** ([`../codegraph/`](../codegraph/)) y **Serena** son la capa de navegación (etapa 4).
-- **Playwright** verifica el contrato de salida (etapa 2 y 7).
+- **Playwright** verifica el contrato de salida (etapa 2 y 7); en la etapa 7, **Docker** re-corre el repro
+  **dentro de la imagen desplegada** (los tests en verde no prueban lo que se envía).
+
+## El método es portable (no vive atado a este repo)
+
+La disciplina —plan→acuerdo, contrato de salida, gates de evidencia, "el humano hace lo externo"— es
+**agnóstica de la herramienta**. Existe un *starter-kit* portable (plantillas de `STATUS` / `SHARP_EDGES` /
+handover / criterios de QA + un script de bootstrap) para llevar estos guardrails a **otro repo** o a
+**GitHub Copilot**: viaja la metodología, y las tools concretas (Serena, CodeGraph, `/kg`) se sustituyen por
+las del nuevo entorno. Es la misma idea que el runbook de ops de [`machine-sync.md`](./machine-sync.md):
+el método se empaqueta y se transporta, no se reinventa en cada sitio.
