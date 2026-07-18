@@ -24,9 +24,12 @@
 
 12. [El flujo y el ejemplo real](#12-metodología)
 13. [Las herramientas: CodeGraph, Serena, GSD](#13-herramientas-del-método)
-14. [Grafo de conocimiento de tickets](#14-grafo-de-conocimiento-de-tickets)
-15. [Transferir la metodología (starter-kit / Copilot)](#15-transferir-la-metodología)
-16. [Sincronización de máquinas](#16-sincronización-de-máquinas)
+14. [Transferir la metodología (starter-kit / Copilot)](#14-transferir-la-metodología)
+15. [Sincronización de máquinas](#15-sincronización-de-máquinas)
+
+**Parte 3 — El grafo de conocimiento de tickets (graphify)**
+
+16. [Grafo de conocimiento de tickets](#16-grafo-de-conocimiento-de-tickets)
 
 ---
 
@@ -424,31 +427,7 @@ en una instalación: [`docs/SETUP_CODEGRAPH_GSD.md`](./docs/SETUP_CODEGRAPH_GSD.
 
 ---
 
-## 14. Grafo de conocimiento de tickets
-
-**CodeGraph, pero para tickets/lecciones** (ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md)).
-Si CodeGraph indexa el *código*, este skill (`/kg`) indexa la **memoria del proyecto** — writeups por ticket,
-"sharp edges", runbooks, notas de memoria — en un grafo navegable. Nodos = tickets + símbolos + invariantes;
-aristas **tipadas** (`references`/`supersedes`/`conceptually_related_to`, con `confidence`); comunidades = zonas
-de peligro. **Determinista, sin LLM en la consulta:**
-```bash
-/kg <ticket|tema>     # vecinos de un nodo   (graphify explain)  ← el uso más común
-/kg <A> <B>           # camino más corto A<->B (graphify path)
-/kg find <substr>     # descubrir el nombre exacto de un nodo
-/kg-refresh           # reconstruir: manifest -> stage -> /graphify (subagentes) -> finalize + leak-check
-```
-Se construye con `graphify` sobre un corpus curado de `.md` (un `manifest.txt` diffeable). **Gotcha:** `graphify`
-respeta `.gitignore` y todo `data/` lo está → se monta el corpus en un **scratch fuera del repo** y se copian
-los artefactos de vuelta. Está **enganchado a la regla history-first del `CLAUDE.md`** (etapa 1, Orientar):
-corre `/kg <ticket|tema>` *antes* de hacer grep en `data/changes/`; una llamada saca los tickets relacionados
-+ la zona de peligro a leer (apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es **recall
-en zonas densas**; aristas `EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo bajo `data/` gitignored
-(nombres internos → interno). Es un artefacto **derivado**: nunca viaja entre máquinas; se reconstruye donde
-esté el corpus (§16).
-
----
-
-## 15. Transferir la metodología
+## 14. Transferir la metodología
 
 Material real: [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) —
 [`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md) (la guía de adaptación),
@@ -480,7 +459,7 @@ contrato de salida · comandos de test scoped · un issue completo con RED→GRE
 
 ---
 
-## 16. Sincronización de máquinas
+## 15. Sincronización de máquinas
 
 Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops
 (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md);
@@ -506,7 +485,7 @@ tar -xzf "$TARBALL" -C "$REPO"                         # solo los docs gitignore
 diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # ¿solo adiciones? quedarse. ¿ediciones propias? STOP
 ```
 
-**Dos huecos, dos subcomandos idempotentes** (el workspace lleva un grafo `/kg` — §14): en un portátil
+**Dos huecos, dos subcomandos idempotentes** (el workspace lleva un grafo `/kg` — §16): en un portátil
 nuevo, `kg_refresh.sh bootstrap` instala el tooling que no va en el bundle y fija el intérprete; y como la
 memoria (`~/.claude`) **no** viaja en el delta, `snapshot-memory` la parquea bajo `data/` (para que viaje) y
 `restore-memory` la fusiona de vuelta con backup en la principal, antes de `/kg-refresh`. Punto de entrada
@@ -519,3 +498,70 @@ escrituras git a remoto (nada de push/merge/PR); STOP y preguntar ante ambigüed
 **no** va en el bundle (reinstalar en destino + `aws sso login`) — igual el CLI de CodeGraph y el índice
 `.codegraph/`, que repone `target-setup.sh`. El humano es dueño de las acciones
 externas; el agente prepara y reporta con evidencia (conteos de ficheros, estados de PR).
+
+---
+
+# PARTE 3 — El grafo de conocimiento de tickets (graphify)
+
+## 16. Grafo de conocimiento de tickets
+
+**Tecnología: `graphify` — no CodeGraph.** CodeGraph es solo la analogía (mismo rol, otro dominio): si
+CodeGraph indexa el *código*, este grafo indexa la **memoria del proyecto** — writeups por ticket, "sharp
+edges", runbooks, notas de memoria. Todo el material real está en
+[`docs/knowledge-graph/`](./docs/knowledge-graph/): [`design.md`](./docs/knowledge-graph/design.md) (diseño
+de la Fase 1, un spike con decisión keep/extend/replace), scripts, tests, manifest y la salida real.
+Resumen narrativo adicional: [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md).
+
+### Las piezas (comandos creados en Claude Code)
+
+| Pieza | Qué es |
+|---|---|
+| `/kg` (skill) | Consulta: `explain` / `path` / `find` — determinista, **sin LLM** |
+| `/kg-refresh` (skill) | Reconstruye el grafo: `prepare` → `/graphify` → `finalize` |
+| [`kg_query.sh`](./docs/knowledge-graph/kg_query.sh) | Envoltorio de `graphify explain`/`path` sobre `output/graph.json` + `find` (descubrir nombres de nodo); resuelve intérprete y ruta del grafo, limpia warnings |
+| [`kg_refresh.sh`](./docs/knowledge-graph/kg_refresh.sh) | Bookends deterministas: `prepare` / `finalize` / `bootstrap` / `snapshot-memory` / `restore-memory` |
+| [`build_manifest.py`](./docs/knowledge-graph/build_manifest.py) / [`stage_corpus.py`](./docs/knowledge-graph/stage_corpus.py) | Enumeran y montan el corpus con nombres provenance-preserving (`sst-5468__sst-5468.md`, `hub__STATUS.md`, `memory__x.md`) |
+| `test_kg_corpus.py` · `test_kg_query.py` · `test_kg_refresh.py` | Los bookends están **testeados** — el pipeline es infraestructura, no un one-off |
+| [`manifest.txt`](./docs/knowledge-graph/manifest.txt) | El corpus explícito y diffeable (~116 ficheros, ~196k palabras) |
+
+### Construir y consultar
+
+```bash
+# construir / refrescar (el único paso con LLM es /graphify, con subagentes en paralelo)
+kg_refresh.sh prepare        # manifest -> stage _corpus/ -> copiar a un scratch FUERA del repo
+/graphify <scratch>          # extracción de nodos/aristas + clustering -> HTML/JSON/reporte
+kg_refresh.sh finalize       # copiar artefactos a output/ + leak-check (nada fuera de data/)
+
+# consultar (cero LLM: kg_query.sh lee output/graph.json directamente)
+/kg <ticket|tema>            # vecinos de un nodo    (graphify explain)  <- el uso más común
+/kg <A> <B>                  # camino más corto A<->B (graphify path)
+/kg find <substr>            # descubrir el nombre exacto de un nodo
+```
+
+**Gotcha que sostiene el pipeline:** `graphify` respeta `.gitignore` y todo `data/` lo está → correr el
+detector in situ encuentra 0 ficheros; el corpus se monta en un scratch fuera del repo y los artefactos
+se copian de vuelta. **Por eso `/kg-refresh` es un skill y no un script:** el paso semántico es un paso
+de Claude; los bookends son deterministas.
+
+### La salida real (ver [`output/`](./docs/knowledge-graph/output/))
+
+- [`graph.html`](./docs/knowledge-graph/output/graph.html) — visualización **vis-network interactiva**:
+  búsqueda de nodos, panel de info, filtro por comunidad. La captura para el deck se regenera con
+  [`presentacion/capture_kg_graph.py`](./presentacion/capture_kg_graph.py) → `presentacion/kg_graph.png`.
+- `graph.json` — NetworkX node-link; aristas **tipadas** (`relation`) con `confidence`
+  (`EXTRACTED`/`INFERRED` + score). Es lo que lee `kg_query.sh`.
+- [`GRAPH_REPORT.md`](./docs/knowledge-graph/output/GRAPH_REPORT.md) — el informe de auditoría:
+  **507 nodos · 672 aristas · 35 comunidades**; **92% `EXTRACTED`** · 7% `INFERRED` (confianza media 0.7);
+  god-nodes (los tickets estructurales, onboarding gratis) y "surprising connections" (lecciones gemelas
+  que nadie había conectado a mano). Las comunidades mapean a zonas de peligro reales
+  ("Letter-End & Run-in Titles", "Title Detection Failures", "PDF Extractor Cascade"…).
+
+### Enganche y ciclo de vida
+
+Enganchado a la regla **history-first** del `CLAUDE.md` (etapa 1, Orientar): corre `/kg <ticket|tema>`
+*antes* de hacer grep en `data/changes/`; una llamada saca los tickets relacionados + la zona de peligro
+a leer (apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es **recall en zonas densas**;
+`EXTRACTED` = fiable, `INFERRED` = pista a verificar. En la instalación real todo vive bajo `data/`
+gitignored (los nodos llevan nombres internos → interno; compartir fuera = pasada de sanitización aparte).
+Es un artefacto **derivado**: nunca viaja entre máquinas; se reconstruye donde esté el corpus (§15, con
+`bootstrap` / `snapshot-memory` / `restore-memory` cerrando el círculo).

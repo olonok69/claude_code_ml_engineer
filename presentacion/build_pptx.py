@@ -2,9 +2,12 @@
 """
 Generador del deck "Claude Code — Curso en dos partes".
 
-Una sola presentación con dos partes diferenciadas:
+Una sola presentación con tres partes diferenciadas:
   Parte 1 — Claude Code (la herramienta)
   Parte 2 — La metodología (agnóstica de la herramienta)
+  Parte 3 — El grafo de conocimiento de tickets (graphify)
+
+La captura del grafo (kg_graph.png) se regenera con capture_kg_graph.py.
 
 Estilo: slides en blanco dibujadas a mano con eyebrow + título + tarjetas
 numeradas + agenda + franja de conclusión + footer. Idempotente: re-ejecutar
@@ -220,11 +223,13 @@ def build():
           [R("de asistente a ", 26, MUTED, False), R("sistema de desarrollo agéntico", 26, TEXT, True)]],
          space_after=10)
     rect(s, 1.02, 4.2, 1.4, 0.05, fill=CORAL)
-    text(s, 1.0, 4.45, 11.5, 1.2,
+    text(s, 1.0, 4.45, 11.5, 1.7,
          [[R("PARTE 1 — ", 15, CORAL, True),
            R("Claude Code: instalación · memoria · contexto & caching · MCP · skills · subagents & teams · automatización", 13.5, MUTED, False)],
           [R("PARTE 2 — ", 15, BLUE, True),
-           R("La metodología (agnóstica): flujo con gates · CodeGraph / Serena / GSD · grafo de tickets · transferencia · ops", 13.5, MUTED, False)]],
+           R("La metodología (agnóstica): flujo con gates · CodeGraph / Serena / GSD · transferencia · ops", 13.5, MUTED, False)],
+          [R("PARTE 3 — ", 15, GREEN, True),
+           R("El grafo de conocimiento de tickets, construido con graphify: pipeline, comandos /kg y el grafo real", 13.5, MUTED, False)]],
          space_after=8)
     text(s, 1.0, 6.7, 11, 0.4,
          [[R("Basado en la documentación oficial (code.claude.com), el curso de hooks de Anthropic, "
@@ -232,7 +237,7 @@ def build():
 
     # ---- 2. Agenda
     s, pg = new()
-    base(s, "Agenda", "Un curso, dos partes", page=pg)
+    base(s, "Agenda", "Un curso, tres partes", page=pg)
     text(s, 0.7, 1.95, 5.85, 0.4, [[R("PARTE 1 · Claude Code", 14, CORAL, True)]])
     p1 = ["01  Instalación y uso básico", "02  Memoria, instrucciones y sesiones",
           "03  Contexto: context window y prompt caching", "04  MCP — conectar tus herramientas",
@@ -243,10 +248,15 @@ def build():
         text(s, 0.95, y + 0.04, 5.5, 0.4, [[R(it, 12, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE)
     text(s, 6.8, 1.95, 5.85, 0.4, [[R("PARTE 2 · La metodología (agnóstica)", 14, BLUE, True)]])
     p2 = ["08  El flujo de 11 etapas + ejemplo real", "09  Las herramientas del método",
-          "10  El grafo de conocimiento de tickets", "11  Transferir la metodología (Copilot)",
-          "12  Sincronización de máquinas", "13  Cierre"]
+          "10  Transferir la metodología (Copilot)", "11  Sincronización de máquinas"]
     for i, it in enumerate(p2):
         y = 2.4 + i * 0.56
+        rect(s, 6.8, y, 5.85, 0.48, fill=PANEL, line=STROKE, rounded=True, radius=0.14)
+        text(s, 7.05, y + 0.04, 5.5, 0.4, [[R(it, 12, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE)
+    text(s, 6.8, 4.75, 5.85, 0.4, [[R("PARTE 3 · El grafo de tickets (graphify)", 14, GREEN, True)]])
+    p3 = ["12  Diseño · pipeline · comandos /kg · el grafo real", "13  Cierre"]
+    for i, it in enumerate(p3):
+        y = 5.2 + i * 0.56
         rect(s, 6.8, y, 5.85, 0.48, fill=PANEL, line=STROKE, rounded=True, radius=0.14)
         text(s, 7.05, y + 0.04, 5.5, 0.4, [[R(it, 12, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE)
 
@@ -591,8 +601,7 @@ def build():
     divider(s, 2, "La metodología",
             "Agnóstica de la herramienta: se demuestra con Claude Code, pero la disciplina viaja.",
             ["08 · El flujo de 11 etapas + ejemplo real", "09 · Las herramientas del método",
-             "10 · El grafo de conocimiento de tickets", "11 · Transferir a otro agente (Copilot)",
-             "12 · Sincronización de máquinas", "13 · Cierre"], page=pg)
+             "10 · Transferir a otro agente (Copilot)", "11 · Sincronización de máquinas"], page=pg)
 
     # ---- 21. Principio
     s, pg = new()
@@ -706,7 +715,7 @@ def build():
         ("CG", "CodeGraph → investigar", "Grafo del CÓDIGO (tree-sitter→SQLite, local). Survey en 1 llamada: fuente + callers + blast radius + cobertura."),
         ("Se", "Serena → pre-refactor", "Navegación semántica vía LSP. find_referencing_symbols desambigua por clase: el chequeo preciso antes de renombrar."),
         ("G", "GSD → plan/ejecutar/verificar", "El método hecho tooling: subagentes gsd-* + estado en .planning/. Automatiza los gates 5-7."),
-        ("/kg", "Grafo de tickets → orientar", "Grafo de la MEMORIA del proyecto: tickets + sharp edges. History-first sin LLM (sección 10)."),
+        ("/kg", "Grafo de tickets → orientar", "Grafo de la MEMORIA del proyecto (con graphify): tickets + sharp edges. History-first sin LLM (Parte 3)."),
         ("Pw", "Playwright → triaje y outbound", "Reproduce el síntoma donde lo ve el consumidor: el endpoint real, no una función interna."),
         ("Or", "Oráculos → diagnosticar", "Parsers/validadores/_diag_*.py propios: respuesta barata y reproducible antes de gastar la tirada del LLM."),
     ], top=2.0, cols=2, height=1.18)
@@ -789,58 +798,9 @@ def build():
              11.5, MUTED, False)]], line_spacing=1.05)
     takeaway(s, "CodeGraph responde '¿qué se rompe?'; Serena responde '¿exactamente quién llama a ESTE process()?'")
 
-    # ---- 29. KG: qué es y cómo se usa
+    # ---- Transferir la metodología
     s, pg = new()
-    base(s, "Parte 2 · 10 · Grafo de tickets", "CodeGraph, pero para tickets y lecciones", page=pg)
-    panel_bullets(s, 0.7, 2.0, 5.85, 2.4, "Grafo sobre los .md del proyecto (data/, interno)",
-                  ["Nodos: tickets + símbolos + invariantes + lecciones",
-                   "Aristas tipadas: references / supersedes / relacionado",
-                   "Comunidades = zonas de peligro (fin-de-carta, títulos…)",
-                   "Determinista, sin LLM en la consulta (lee graph.json)"], accent=BLUE)
-    code(s, 6.8, 2.2, 5.85, 1.9,
-         ["/kg <ticket|tema>   # vecinos  (explain)",
-          "/kg <A> <B>         # camino    (path)",
-          "/kg find <substr>   # nombre de nodo",
-          "/kg-refresh         # reconstruir el grafo"],
-         title="Skill /kg  (envuelve graphify explain/path)")
-    rect(s, 6.8, 4.28, 5.85, 1.12, fill=PANEL, line=STROKE, rounded=True, radius=0.06)
-    text(s, 7.05, 4.4, 5.4, 0.95,
-         [[R("Primero la historia:  ", 11, CORAL, True),
-           R("corre /kg <ticket|tema> ANTES de grep — saca los tickets relacionados + la zona de "
-             "peligro a leer. Apunta a qué leer, no lo sustituye.", 11, TEXT, False)]], line_spacing=1.03)
-    text(s, 0.7, 4.6, 5.85, 1.4,
-         [[R("Ejemplo real: /kg get_letter_end", 13, GREEN, True)],
-          [R("devuelve al instante los 5-6 tickets que comparten ese código — la zona de peligro completa.",
-             10.5, MUTED, False)]],
-         space_after=4)
-    takeaway(s, "El grafo es el mapa; el agente, el guía. Recall de zonas de peligro que si no tendrías que recordar.")
-
-    # ---- 30. KG: cómo se construye y dónde se engancha
-    s, pg = new()
-    base(s, "Parte 2 · 10 · Grafo de tickets", "Cómo se construye — y dónde se engancha", page=pg)
-    steps = [
-        ("1", "Corpus curado", "manifest.txt DIFFEABLE: writeups sst-*, hubs (STATUS, SHARP_EDGES), runbooks, memoria. Sin binarios ni copias stale."),
-        ("2", "prepare", "kg_refresh.sh: manifest → stage → copiar a un SCRATCH FUERA del repo (graphify respeta .gitignore y data/ lo está)."),
-        ("3", "/graphify", "Extracción semántica con ~5 subagentes en paralelo → clustering. El único paso con LLM: en el BUILD, nunca en la consulta."),
-        ("4", "finalize", "Copiar artefactos (graph.json tipado + graph.html + GRAPH_REPORT.md) + leak-check: nada fuera de data/."),
-    ]
-    for i, (n, t, d) in enumerate(steps):
-        y = 2.0 + i * 0.82
-        rect(s, 0.7, y, 11.95, 0.72, fill=PANEL, line=STROKE, rounded=True, radius=0.09)
-        rect(s, 0.86, y + 0.14, 0.44, 0.44, fill=CORAL, rounded=True, radius=0.35)
-        text(s, 0.86, y + 0.15, 0.44, 0.42, [[R(n, 13, BG, True)]], align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
-        text(s, 1.5, y + 0.07, 1.9, 0.58, [[R(t, 12.5, BLUE, True)]], anchor=MSO_ANCHOR.MIDDLE)
-        text(s, 3.5, y + 0.07, 9.0, 0.6, [[R(d, 10.5, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE, line_spacing=1.0)
-    text(s, 0.7, 5.4, 11.95, 0.8,
-         [[R("Dónde se engancha: ", 12, GREEN, True),
-           R("etapa 1 (Orientar) — la regla history-first del CLAUDE.md. Honestidad: la ganancia es recall en "
-             "zonas densas; EXTRACTED = fiable, INFERRED = pista. Artefacto derivado: nunca viaja, se reconstruye (sección 12).",
-             11.5, MUTED, False)]], line_spacing=1.1)
-    takeaway(s, "Un paso semántico en el build; cero LLM en la consulta. Por eso es un skill, no un script.")
-
-    # ---- 31. Transferir la metodología
-    s, pg = new()
-    base(s, "Parte 2 · 11 · Transferencia", "La prueba de que es agnóstica: llevarla a Copilot", page=pg)
+    base(s, "Parte 2 · 10 · Transferencia", "La prueba de que es agnóstica: llevarla a Copilot", page=pg)
     panel_bullets(s, 0.7, 2.0, 5.85, 2.75, "Viaja SIN cambios (las 5 reglas)",
                   ["Plan → acuerdo → implementar",
                    "Verificar en el contrato del CONSUMIDOR",
@@ -859,9 +819,9 @@ def build():
                   accent=CORAL)
     takeaway(s, "Si solo conservas cinco reglas, conserva esas cinco. Las tools se sustituyen; la disciplina viaja.")
 
-    # ---- 32. Machine sync
+    # ---- Machine sync
     s, pg = new()
-    base(s, "Parte 2 · 12 · Ops", "Un runbook real: sincronizar máquinas", page=pg)
+    base(s, "Parte 2 · 11 · Ops", "Un runbook real: sincronizar máquinas", page=pg)
     panel_bullets(s, 0.7, 2.0, 5.85, 2.7, "Outbound — copia completa",
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
@@ -879,7 +839,108 @@ def build():
                   accent=CORAL)
     takeaway(s, "La metodología no es solo para código: memoria durable, guardrails y 'el humano hace lo externo' también en ops.")
 
-    # ---- 33. Cierre
+    # =========================================================================
+    # PARTE 3 — EL GRAFO DE CONOCIMIENTO DE TICKETS (GRAPHIFY)
+    # =========================================================================
+
+    # ---- Separador Parte 3
+    s, pg = new()
+    divider(s, 3, "El grafo de tickets",
+            "Un caso completo construido con graphify — no con CodeGraph: la memoria del proyecto, navegable.",
+            ["12a · El problema y el diseño (spike)", "12b · Pipeline y comandos (/kg, /kg-refresh)",
+             "12c · El grafo real, visualizado", "12d · Uso y enganche en la metodología"], page=pg)
+
+    # ---- P3: problema y diseño
+    s, pg = new()
+    base(s, "Parte 3 · 12a · Grafo de tickets", "El problema, y por qué graphify", page=pg)
+    panel_bullets(s, 0.7, 2.0, 5.85, 2.5, "El problema",
+                  ["~540 ficheros de writeups, sharp edges, runbooks, memoria",
+                   "Un bug 'nuevo' casi siempre tiene contexto previo que restringe el fix",
+                   "Encontrarlo a mano = recordar que existe + grep",
+                   "El grafo lo hace EXPLÍCITO y consultable en 1 llamada"], accent=CORAL)
+    panel_bullets(s, 6.8, 2.0, 5.85, 2.5, "El corpus: manifest, no glob",
+                  ["manifest.txt DIFFEABLE: ~116 ficheros, ~196k palabras",
+                   "Writeups sst-* (+ fallback determinista) · hubs · runbooks · memoria",
+                   "Exclusiones duras: binarios, handovers repetidos, copias stale (payload/)",
+                   "Densidad sin conocimiento nuevo = ruido"], accent=BLUE)
+    rect(s, 0.7, 4.75, 11.95, 1.35, fill=PANEL_2, line=GREEN, rounded=True, radius=0.08)
+    text(s, 1.0, 4.92, 11.4, 1.05,
+         [[R("La tecnología es graphify — CodeGraph es solo la analogía.  ", 12.5, GREEN, True),
+           R("Mismo rol (grafo consultable antes de tocar nada), otro dominio (tickets, no código), otra herramienta. "
+             "La Fase 1 fue un SPIKE con decisión keep/extend/replace: validar graphify off-the-shelf antes de invertir "
+             "en extracción custom. Bastó — y se quedó.", 11.5, TEXT, False)]], line_spacing=1.12)
+    takeaway(s, "Material completo (diseño, scripts, tests, salida real): docs/knowledge-graph/.")
+
+    # ---- P3: pipeline y comandos
+    s, pg = new()
+    base(s, "Parte 3 · 12b · Grafo de tickets", "Pipeline y comandos creados en Claude Code", page=pg)
+    code(s, 0.7, 2.25, 6.35, 2.15,
+         ["kg_refresh.sh prepare   # manifest -> stage",
+          "                        # -> scratch FUERA del repo",
+          "/graphify <scratch>     # ÚNICO paso con LLM:",
+          "                        # nodos+aristas+clustering",
+          "kg_refresh.sh finalize  # output/ + leak-check"],
+         title="Build (skill /kg-refresh)")
+    panel_bullets(s, 7.35, 1.92, 5.3, 2.5, "Las piezas",
+                  ["/kg y /kg-refresh — skills de Claude Code",
+                   "kg_query.sh — envuelve graphify explain/path + find",
+                   "kg_refresh.sh — prepare · finalize · bootstrap · snapshot/restore-memory",
+                   "build_manifest.py + stage_corpus.py — el corpus",
+                   "test_kg_*.py — los bookends, TESTEADOS"], accent=BLUE)
+    rect(s, 0.7, 4.62, 11.95, 1.5, fill=PANEL, line=STROKE, rounded=True, radius=0.08)
+    text(s, 1.0, 4.78, 11.4, 1.2,
+         [[R("El gotcha que lo sostiene:  ", 12, CORAL, True),
+           R("graphify respeta .gitignore y todo data/ lo está → correr el detector in situ encuentra 0 ficheros. "
+             "Por eso el corpus se monta en un scratch fuera del repo y los artefactos se copian de vuelta.",
+             11.5, TEXT, False)],
+          [R("Por eso /kg-refresh es un skill, no un script:  ", 12, GREEN, True),
+           R("el paso semántico (/graphify, subagentes en paralelo) es un paso de Claude; los bookends son deterministas.",
+             11.5, TEXT, False)]], line_spacing=1.12, space_after=8)
+    takeaway(s, "Staging con provenance: sst-5468__sst-5468.md, hub__STATUS.md, memory__x.md — cada nodo traza a su fuente.")
+
+    # ---- P3: visualización
+    s, pg = new()
+    base(s, "Parte 3 · 12c · Grafo de tickets", "El grafo real: 507 nodos, 35 comunidades", page=pg)
+    kg_img = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kg_graph.png")
+    if os.path.exists(kg_img):
+        rect(s, 0.68, 1.93, 8.84, 4.99, fill=None, line=STROKE, lw=1.0)
+        s.shapes.add_picture(kg_img, Inches(0.7), Inches(1.95), Inches(8.8), Inches(4.95))
+    panel_bullets(s, 9.7, 1.95, 2.95, 3.4, "La salida real",
+                  ["507 nodos · 672 aristas",
+                   "35 comunidades",
+                   "92% EXTRACTED (fiable)",
+                   "7% INFERRED (conf. 0.7)",
+                   "116 ficheros, ~196k palabras"], accent=GREEN)
+    text(s, 9.7, 5.5, 2.95, 1.4,
+         [[R("graph.html interactivo:", 11, BLUE, True)],
+          [R("búsqueda de nodos, panel de info, filtro por comunidad (vis-network).", 10, MUTED, False)]],
+         space_after=4, line_spacing=1.05)
+    takeaway(s, "Las comunidades mapean a zonas de peligro reales; los god-nodes son la lista de onboarding gratis.")
+
+    # ---- P3: uso y enganche
+    s, pg = new()
+    base(s, "Parte 3 · 12d · Grafo de tickets", "Cómo se usa — y dónde se engancha", page=pg)
+    code(s, 0.7, 2.25, 6.35, 2.0,
+         ["/kg <ticket|tema>  # vecinos   (explain)",
+          "/kg <A> <B>        # camino    (path)",
+          "/kg find <substr>  # nombre exacto de nodo",
+          "/kg-refresh        # reconstruir (barato)"],
+         title="Consulta: CERO LLM (kg_query.sh lee graph.json)")
+    panel_bullets(s, 7.35, 1.92, 5.3, 2.5, "Dónde se engancha",
+                  ["Etapa 1 (Orientar) del flujo de 11 etapas",
+                   "Regla history-first del CLAUDE.md:",
+                   "/kg <ticket|tema> ANTES de grep",
+                   "Apunta a QUÉ leer; no lo sustituye"], accent=CORAL)
+    text(s, 0.7, 4.45, 6.35, 0.9,
+         [[R("Ejemplo real: /kg get_letter_end ", 12, GREEN, True),
+           R("→ la zona de peligro completa al instante: los 5-6 tickets que comparten ese código.",
+             11.5, MUTED, False)]], line_spacing=1.1)
+    panel_bullets(s, 0.7, 5.2, 11.95, 1.0, "Honestidad y ciclo de vida",
+                  ["Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado: nunca viaja, se reconstruye"],
+                  accent=BLUE)
+    takeaway(s, "Un paso semántico en el build, cero LLM en la consulta. El grafo es el mapa; el agente, el guía.")
+
+    # ---- Cierre
     s, pg = new()
     base(s, "Cierre", "De asistente a sistema", page=pg)
     text(s, 0.7, 1.95, 5.85, 0.4, [[R("PARTE 1 · la herramienta", 13, CORAL, True)]])
@@ -896,12 +957,12 @@ def build():
         text(s, 0.9, y + 0.19, 0.44, 0.42, [[R(n, 13, BG, True)]], align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         text(s, 1.5, y + 0.1, 5.0, 0.35, [[R(t, 12.5, TEXT, True)]])
         text(s, 1.5, y + 0.43, 5.0, 0.38, [[R(d, 10, MUTED, False)]], line_spacing=1.0)
-    text(s, 6.8, 1.95, 5.85, 0.4, [[R("PARTE 2 · el método", 13, BLUE, True)]])
+    text(s, 6.8, 1.95, 5.85, 0.4, [[R("PARTE 2 + 3 · el método y el grafo", 13, BLUE, True)]])
     cards2 = [
         ("5", "El flujo de 11 etapas", "Gates deterministas; el humano posee las decisiones."),
-        ("6", "Las tools del método", "CodeGraph · Serena · GSD · /kg: barato→caro, determinista→LLM."),
-        ("7", "Transferible", "Starter-kit probado en GitHub Copilot: la disciplina viaja."),
-        ("8", "Hasta en ops", "Machine-sync con guardrails: el mismo método fuera del código."),
+        ("6", "Las tools del método", "CodeGraph · Serena · GSD: barato→caro, determinista→LLM."),
+        ("7", "Transferible y hasta en ops", "Starter-kit probado en Copilot; machine-sync con guardrails."),
+        ("8", "El grafo de tickets (graphify)", "507 nodos · 35 comunidades: history-first sin LLM."),
     ]
     for i, (n, t, d) in enumerate(cards2):
         y = 2.35 + i * 0.95

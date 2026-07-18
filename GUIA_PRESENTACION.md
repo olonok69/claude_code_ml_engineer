@@ -4,10 +4,13 @@
 > bloque de slides del deck ([`presentacion/`](./presentacion/)) e incluye el hilo a contar, los puntos
 > clave y una frase de cierre 🗣️ lista para la diapositiva. Audiencia: **técnica / desarrolladores**.
 >
-> El deck es **una sola presentación** con **dos partes diferenciadas**:
+> El deck es **una sola presentación** con **tres partes diferenciadas**:
 > - **Parte 1 — Claude Code:** la herramienta, de la instalación a los equipos de agentes.
 > - **Parte 2 — La metodología:** cómo se trabaja de verdad con un agente en producción. Es **agnóstica
->   de la herramienta** — se demuestra con Claude Code, pero viaja a otros agentes (sección 11).
+>   de la herramienta** — se demuestra con Claude Code, pero viaja a otros agentes (sección 10).
+> - **Parte 3 — El grafo de conocimiento de tickets:** un caso completo construido con **graphify**
+>   (no con CodeGraph): pipeline, comandos creados en Claude Code, visualización real y enganche
+>   en la metodología.
 >
 > El detalle de implementación (configs, código copy-paste) está en [`GUIA_TECNICA.md`](./GUIA_TECNICA.md)
 > y en [`ejemplos/`](./ejemplos/). La carpeta [`docs/`](./docs/) es material de referencia de una
@@ -32,9 +35,12 @@
 
 8. [La metodología: principio, flujo y ejemplo real](#8-la-metodología)
 9. [Las herramientas del método: CodeGraph, Serena, GSD…](#9-las-herramientas-del-método)
-10. [El grafo de conocimiento de tickets](#10-el-grafo-de-conocimiento-de-tickets)
-11. [Transferir la metodología a otro agente](#11-transferir-la-metodología)
-12. [Sincronización de máquinas](#12-sincronización-de-máquinas)
+10. [Transferir la metodología a otro agente](#10-transferir-la-metodología)
+11. [Sincronización de máquinas](#11-sincronización-de-máquinas)
+
+**Parte 3 — El grafo de conocimiento de tickets (graphify)**
+
+12. [El grafo de conocimiento de tickets](#12-el-grafo-de-conocimiento-de-tickets)
 13. [Cierre](#13-cierre)
 
 ---
@@ -395,7 +401,7 @@ chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
 
 | Etapa del flujo | Herramienta |
 |---|---|
-| Orientar (1) | `/kg` (grafo de tickets, sección 10) · `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
+| Orientar (1) | `/kg` (grafo de tickets — **graphify**, Parte 3) · `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
 | Navegar / investigar (4) | **CodeGraph** `codegraph_explore` — fuente + rutas + blast radius + cobertura, en 1 llamada |
 | Refactor-check preciso (4-6) | **Serena** `find_referencing_symbols` — desambigua por clase; **obligatorio** antes de renombrar/borrar |
 | Diagnosticar (4) | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
@@ -429,46 +435,7 @@ chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
 
 ---
 
-## 10. El grafo de conocimiento de tickets
-
-**Hilo:** Si CodeGraph indexa el *código*, este grafo indexa la **memoria del proyecto** — writeups por
-ticket, "sharp edges", runbooks, notas — y responde *"¿qué se rompió antes cerca de aquí?"* en una
-llamada, **sin LLM**. Detalle completo: [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md).
-
-### Cómo se construye (`/kg-refresh`)
-- **Corpus curado, no un glob:** un `manifest.txt` **diffeable** enumera qué entra (writeups `sst-*`,
-  hubs como `STATUS.md`/`SHARP_EDGES.md`, runbooks, memoria). Exclusiones duras: binarios, copias stale,
-  handovers que repiten el ticket — *densidad sin conocimiento nuevo = ruido*.
-- **Pipeline determinista con un paso semántico dentro:** `prepare` (manifest → stage) → `/graphify`
-  (extracción con ~5 subagentes en paralelo → clustering) → `finalize` (copiar artefactos + leak-check).
-- **El gotcha que lo sostiene:** `graphify` respeta `.gitignore` y todo `data/` lo está → el corpus se
-  monta en un **scratch fuera del repo** y los artefactos se copian de vuelta.
-- Salida: `graph.json` (aristas **tipadas** con `relation` + `confidence`), `graph.html` (interactivo),
-  `GRAPH_REPORT.md` (god-nodes, conexiones sorprendentes).
-
-### Cómo se usa (`/kg`) — determinista, sin LLM en la consulta
-```bash
-/kg <ticket|tema>     # vecinos de un nodo   (graphify explain)  ← el uso más común
-/kg <A> <B>           # camino más corto A<->B (graphify path)
-/kg find <substr>     # descubrir el nombre exacto de un nodo
-```
-Matching difuso: `SST-1234`, `get_letter_end`, `"fin de carta"` resuelven. Ejemplo real: para un fix de
-fin-de-carta, `/kg get_letter_end` devuelve al instante la zona de peligro completa — los 5-6 tickets que
-comparten ese código.
-
-### Dónde se engancha en la metodología
-En la **etapa 1 (Orientar)**: la regla *history-first* del `CLAUDE.md` dice **corre `/kg <ticket|tema>`
-antes de hacer grep** en `data/changes/`. Una llamada devuelve la lista de lectura (tickets relacionados +
-zona de peligro); el grafo apunta a *qué leer*, no lo sustituye. Honestidad: la ganancia real es **recall
-en zonas densas**; aristas `EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo vive bajo `data/`
-gitignored (nombres internos → interno); es un **artefacto derivado**: nunca viaja entre máquinas, se
-reconstruye donde esté el corpus (sección 12).
-
-🗣️ *"El grafo es el mapa; el agente, el guía. Recall de zonas de peligro que si no tendrías que recordar."*
-
----
-
-## 11. Transferir la metodología
+## 10. Transferir la metodología
 
 **Hilo:** La prueba de que la Parte 2 es **agnóstica**: el método está empaquetado como un *starter-kit*
 y transferido de verdad a **GitHub Copilot** en otro repo. Material real:
@@ -503,7 +470,7 @@ iniciales, definir el contrato, comandos de test scoped, y **un issue completo c
 
 ---
 
-## 12. Sincronización de máquinas
+## 11. Sincronización de máquinas
 
 **Hilo:** Los mismos principios de la metodología aplicados a **ops**: mover el workspace entre la máquina
 principal y el portátil con un runbook real (ver
@@ -537,6 +504,95 @@ es solo para código:
 
 ---
 
+# PARTE 3 — El grafo de conocimiento de tickets (graphify)
+
+## 12. El grafo de conocimiento de tickets
+
+**Hilo:** Un caso completo, de la idea al tooling en producción. Si CodeGraph indexa el *código*, este
+grafo indexa la **memoria del proyecto** — writeups por ticket, "sharp edges", runbooks, notas de memoria —
+y responde *"¿qué se rompió antes cerca de aquí?"* en una llamada, **sin LLM**. La tecnología que lo
+construye es **graphify** (no CodeGraph — CodeGraph es solo la *analogía*: mismo rol, otro dominio, otra
+herramienta). Todo el material real está en [`docs/knowledge-graph/`](./docs/knowledge-graph/): diseño,
+scripts, tests, manifest y la salida real ([`output/graph.html`](./docs/knowledge-graph/output/graph.html)).
+
+### 12a. El problema y el diseño (ver [`docs/knowledge-graph/design.md`](./docs/knowledge-graph/design.md))
+
+En un repo con **~540 ficheros** de writeups, un bug "nuevo" casi siempre tiene contexto previo que
+restringe el fix: un invariante, un ticket que arregló algo parecido, una regresión documentada.
+Encontrarlo a mano = recordar que existe + grep. El grafo lo hace **explícito y consultable**.
+
+- **Corpus curado, no un glob:** un [`manifest.txt`](./docs/knowledge-graph/manifest.txt) **diffeable**
+  enumera exactamente qué entra (~116 ficheros, ~196k palabras): writeups `sst-*` (con fallback
+  determinista para carpetas sin doc primario), hubs (`STATUS`, `SHARP_EDGES`, `PLAYBOOK`…), estado de
+  extractores, runbooks de ops y la memoria de `~/.claude`.
+- **Exclusiones duras:** binarios, handovers que repiten el ticket, QA repetitivo y — crítico — las
+  **copias stale** de un tarball de viaje (`payload/`): incluirlas crearía nodos duplicados/conflictivos.
+  *Densidad sin conocimiento nuevo = ruido.*
+- **Fase 1 fue un spike con decisión al final** (keep/extend/replace): validar si `graphify`
+  off-the-shelf bastaba antes de invertir en extracción custom. Bastó — y se quedó.
+
+### 12b. El pipeline y los comandos creados en Claude Code
+
+Dos **skills** (`/kg`, `/kg-refresh`) + dos **scripts** deterministas
+([`kg_query.sh`](./docs/knowledge-graph/kg_query.sh), [`kg_refresh.sh`](./docs/knowledge-graph/kg_refresh.sh))
++ dos utilidades de corpus (`build_manifest.py`, `stage_corpus.py`) + **tests** (`test_kg_*.py`):
+
+```
+kg_refresh.sh prepare   # build_manifest -> stage _corpus/ (nombres con provenance:
+                        #   sst-5468__sst-5468.md, hub__STATUS.md, memory__x.md)
+                        #   -> copiar a un SCRATCH FUERA del repo
+/graphify <scratch>     # el único paso con LLM (subagentes en paralelo): extracción
+                        #   de nodos/aristas + clustering -> HTML/JSON/reporte
+kg_refresh.sh finalize  # copiar artefactos a output/ + leak-check (nada fuera de data/)
+```
+
+- **El gotcha que lo sostiene:** `graphify` respeta `.gitignore` y todo `data/` lo está → correr el
+  detector in situ encuentra **0 ficheros**. Por eso el corpus se monta en un scratch fuera del repo.
+- **Por eso `/kg-refresh` es un skill y no un script:** el paso semántico (`/graphify`) es un paso de
+  Claude; los bookends (`prepare`/`finalize`) son deterministas y testeados.
+- Subcomandos extra para el viaje entre máquinas: `bootstrap` (portátil nuevo), `snapshot-memory` /
+  `restore-memory` (la memoria no viaja en el delta — se parquea bajo `data/` y se fusiona de vuelta).
+
+### 12c. La salida real (ver [`output/GRAPH_REPORT.md`](./docs/knowledge-graph/output/GRAPH_REPORT.md) y la slide con la visualización)
+
+El grafo real del proyecto (capturado de `output/graph.html`, un vis-network interactivo con búsqueda,
+panel de nodo y filtro por comunidad):
+
+- **507 nodos · 672 aristas · 35 comunidades** sobre 116 ficheros (~196k palabras).
+- **92% de aristas `EXTRACTED`** (citas literales, fiables) · 7% `INFERRED` (similitud semántica,
+  confianza media 0.7 — pistas a verificar, no hechos).
+- Las **comunidades mapean a zonas de peligro reales**: "Letter-End & Run-in Titles", "Title Detection
+  Failures", "Comment-Memo Boundaries", "PDF Extractor Cascade"… — exactamente los clústers que un
+  ingeniero senior tiene en la cabeza.
+- Los **god-nodes** (nodos más conectados) son los tickets estructurales del proyecto — el top-10 del
+  reporte es una lista de onboarding gratis.
+- El reporte incluye **"surprising connections"**: pares de lecciones semánticamente gemelas que nadie
+  había conectado a mano.
+
+### 12d. Cómo se usa y dónde se engancha
+
+```bash
+/kg <ticket|tema>     # vecinos de un nodo   (graphify explain)  ← el uso más común
+/kg <A> <B>           # camino más corto A<->B (graphify path)
+/kg find <substr>     # descubrir el nombre exacto de un nodo
+/kg-refresh           # reconstruir tras nuevos tickets (barato, re-runnable)
+```
+
+Matching difuso: `SST-1234`, `get_letter_end`, `"letter-end"` resuelven. **Determinista, sin LLM en la
+consulta**: `kg_query.sh` lee `output/graph.json` directamente. Ejemplo real: para un fix de
+fin-de-carta, `/kg get_letter_end` devuelve al instante la zona de peligro completa — los 5-6 tickets que
+comparten ese código.
+
+**Dónde se engancha:** en la **etapa 1 (Orientar)** de la metodología — la regla *history-first* del
+`CLAUDE.md` dice **corre `/kg <ticket|tema>` antes de hacer grep** en `data/changes/`. El grafo apunta a
+*qué leer*, no lo sustituye. Y es un **artefacto derivado**: nunca viaja entre máquinas; se reconstruye
+donde esté el corpus (sección 11). Confidencialidad: los nodos llevan nombres internos → el árbol
+completo vive bajo `data/` gitignored; compartirlo fuera exigiría una pasada de sanitización aparte.
+
+🗣️ *"Un paso semántico en el build, cero LLM en la consulta. El grafo es el mapa; el agente, el guía."*
+
+---
+
 ## 13. Cierre
 
 **Parte 1 — la herramienta:** instalar es trivial; el valor está en **cómo** lo usas. Las capas:
@@ -544,8 +600,12 @@ es solo para código:
 automatización.** El context window es el presupuesto; hooks y permisos son las garantías.
 
 **Parte 2 — el método:** un agente potente sin método es caos rápido. El flujo de 11 etapas canaliza la
-potencia por **gates deterministas**; las tools (CodeGraph, Serena, GSD, `/kg`) encarnan la prevalencia
+potencia por **gates deterministas**; las tools (CodeGraph, Serena, GSD) encarnan la prevalencia
 barato→caro; y la disciplina **viaja** — a otro repo, a otro agente, incluso a ops.
+
+**Parte 3 — el grafo de tickets:** el caso completo que une las dos partes — skills y subagentes de
+Claude Code (Parte 1) al servicio del paso *history-first* de la metodología (Parte 2), construido con
+**graphify**: 507 nodos, 672 aristas, 35 comunidades que mapean a zonas de peligro reales.
 
 **El salto de nivel:** de "chatear con un asistente" a **un sistema**: hooks que garantizan calidad, MCP
 que conecta tu mundo, subagentes que escalan el trabajo, y una metodología que trata al agente como
