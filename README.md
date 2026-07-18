@@ -1,6 +1,6 @@
 # Claude Code — Curso en dos partes (presentación + guías)
 
-Material para un **curso/workshop** sobre **Claude Code**: una única presentación (`.pptx`) con **dos
+Material para un **curso/workshop** sobre **Claude Code**: una única presentación (`.pptx`) con **tres
 partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables. En español, orientado a
 **desarrolladores**.
 
@@ -8,8 +8,11 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
   (context window + prompt caching)** · MCP · plugins, tools y skills · **subagents y agent teams** ·
   automatización.
 - **Parte 2 — La metodología (agnóstica de la herramienta):** el flujo real de 11 etapas con gates ·
-  las herramientas del método (CodeGraph, Serena, GSD, oráculos) · el grafo de conocimiento de tickets ·
-  la transferencia a otro agente (GitHub Copilot) · la sincronización de máquinas.
+  las herramientas del método (CodeGraph, Serena, GSD, oráculos) · la transferencia a otro agente
+  (GitHub Copilot) · la sincronización de máquinas.
+- **Parte 3 — El grafo de conocimiento de tickets:** un caso completo construido con **graphify**:
+  corpus con manifest, pipeline `/kg-refresh`, consulta `/kg` sin LLM, la visualización real del grafo
+  (507 nodos · 35 comunidades) y su enganche en la metodología.
 
 ## Contenido
 
@@ -17,7 +20,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 |---|---|
 | [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente, en dos partes: hilo a contar por slide + frases de cierre 🗣️ + links al código. |
 | [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código), en las mismas dos partes. |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 33 slides, con separadores de parte). |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 36 slides, con separadores de parte). |
 | [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
 | [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
@@ -35,19 +38,24 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 - [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling (§07).
 
 **Parte 2:**
-- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), el **runbook de ops** (sincronizar el workspace entre máquinas) y el diagrama del flujo (§08, §12).
+- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), el **runbook de ops** (sincronizar el workspace entre máquinas) y el diagrama del flujo (§08, §11).
 - [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) · [`ejemplos/serena/`](./ejemplos/serena/) — las herramientas del método, en profundidad (§09).
-- [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md) — el grafo de conocimiento de tickets (§10).
-- [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§11).
-- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización entre máquinas (§12).
+- [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§10).
+- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización entre máquinas (§11).
+
+**Parte 3:**
+- [`docs/knowledge-graph/`](./docs/knowledge-graph/) — el grafo de conocimiento de tickets, construido con **graphify**: diseño (`design.md`), scripts (`kg_query.sh`, `kg_refresh.sh`, `build_manifest.py`, `stage_corpus.py`), tests, `manifest.txt` y la **salida real** (`output/graph.html` interactivo + `GRAPH_REPORT.md`) (§12).
+- [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md) — el resumen narrativo del mismo sistema.
+- [`presentacion/kg_graph.png`](./presentacion/kg_graph.png) — la captura del grafo usada en el deck (regenerable con `capture_kg_graph.py`).
 
 ## Regenerar el deck y los diagramas
 
 ```bash
 pip install python-pptx pillow
-python presentacion/build_pptx.py            # -> presentacion/Claude_Code_Presentacion.pptx
-python ejemplos/metodologia/render_flow.py   # -> flow.png (flujo de 11 etapas)
-python ejemplos/subagents/render_agents.py   # -> agents.png (subagentes vs agent teams)
+python presentacion/build_pptx.py             # -> presentacion/Claude_Code_Presentacion.pptx
+python ejemplos/metodologia/render_flow.py    # -> flow.png (flujo de 11 etapas)
+python ejemplos/subagents/render_agents.py    # -> agents.png (subagentes vs agent teams)
+python presentacion/capture_kg_graph.py       # -> kg_graph.png (captura del grafo de tickets; requiere playwright)
 ```
 
 ## Fuentes
