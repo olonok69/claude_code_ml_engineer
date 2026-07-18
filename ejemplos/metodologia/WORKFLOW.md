@@ -4,8 +4,9 @@
 > sujeto a revisión constante. Está sanitizado (sin nombres de cliente, IDs de ticket ni secretos), pero
 > las herramientas, los gates y la organización son los reales.
 >
-> El principio de fondo (ver [`../gsd/`](../gsd/) y la guía de presentación §6): **el agente es un
-> colaborador disciplinado, no un autopilot. La autonomía se gana por-decisión.** El agente hace el
+> El principio de fondo (ver la guía de presentación §8; [`../gsd/`](../gsd/) es su versión
+> productizada): **el agente es un colaborador disciplinado, no un autopilot. La autonomía se gana
+> por-decisión.** El agente hace el
 > trabajo de anchura (investigar, planificar, implementar, testear, documentar); el humano es dueño de
 > las **decisiones** y de **toda acción externa** (push, PR, deploy, hablar con QA/cliente).
 
@@ -37,8 +38,8 @@
 1. **Orientar — history-first Y status-first.** Antes de tocar nada, el agente lee el registro durable
    (`data/changes/STATUS.md`, ledgers por-ticket) **y** el estado vivo (`git branch -a`, `gh pr list`).
    Saltarse esto es la causa #1 de retrabajo: ramificar de la base equivocada o duplicar trabajo en curso.
-   El *primer paso* history-first es **`/kg <ticket|tema>`** —un grafo de tickets/lecciones, "CodeGraph pero
-   para tickets", determinista— que saca los tickets relacionados + la **zona de peligro** a leer antes de
+   El *primer paso* history-first es **`/kg <ticket|tema>`** —un grafo de tickets/lecciones construido con
+   **graphify** ("CodeGraph pero para tickets"), determinista— que saca los tickets relacionados + la **zona de peligro** a leer antes de
    hacer grep (ver [`herramientas.md`](./herramientas.md) y [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)).
 2. **Triaje inbound — ¿el síntoma es real en el contrato?** Se abre el JSON del `status endpoint` del
    documento afectado (lo aporta QA, o se reproduce con Playwright/F12 en el navegador). Si el síntoma no
