@@ -72,11 +72,24 @@ Ver la referencia completa de CLI en la doc oficial (`/en/cli-reference`).
 Sintaxis `@ruta/fichero` dentro de un CLAUDE.md importa otro doc al cargarlo
 (ejemplo: [`ejemplos/context/CLAUDE.import-example.md`](./ejemplos/context/CLAUDE.import-example.md)).
 
+> ⚠️ **`@import` ≠ "carga bajo demanda" — son mecanismos OPUESTOS.** `@ruta` es **EAGER**: incorpora el
+> contenido **al arrancar** → cuenta contra el contexto *siempre*; úsalo solo para cositas **pequeñas y
+> estables** (un overview, los scripts). El patrón de dos niveles de abajo es **LAZY**: un puntero de texto,
+> el fichero **no se carga** hasta que el agente hace `Read`. **El proyecto real NO usa `@` para los
+> ledgers** — meter `STATUS.md`/`SHARP_EDGES.md` con `@import` los cargaría enteros al arrancar y mataría el
+> lean-context.
+
 ### Patrón de dos niveles (ver [`ejemplos/claude-md/`](./ejemplos/claude-md/))
-- **Nivel 1** = el `CLAUDE.md` siempre cargado: orientación + punteros de una línea. Pequeño.
+- **Nivel 1** = el `CLAUDE.md` siempre cargado (Claude Code lo lee al arrancar): orientación + **punteros**
+  de una línea. Pequeño.
 - **Nivel 2** = ficheros bajo `data/changes/` (`STATUS.md`, `PLAYBOOK.md`, `SHARP_EDGES.md`,
-  `CONVENTIONS.md`, `<TICKET>/<TICKET>.md`) que se leen bajo demanda.
-- **Regla write-once:** cada dato en un único ledger canónico; el core lleva el puntero, no la copia.
+  `CONVENTIONS.md`, `<TICKET>/<TICKET>.md`) que el agente **lee con `Read` cuando el área entra en juego**
+  (carga **LAZY, no `@import`**: coste 0 hasta leerlos). El mecanismo es prosa: *"Moved to `…`"*, *"Full …
+  → `…`"*, *"load only when the area is in play"*.
+- **Patrón índice** (lo más fino): para `SHARP_EDGES`/`PLAYBOOK`, el nivel 1 guarda **solo el índice** de
+  nombres/títulos; las entradas completas viven en nivel 2 → ves *qué existe* sin cargar el detalle.
+- **Regla write-once / anti-rebloat:** cada dato en un único ledger canónico; el core lleva el puntero, no
+  la copia (regla real del repo: *"Do NOT add a per-ticket ledger back into this `CLAUDE.md`"*).
 
 ### Auto-memory
 Claude persiste aprendizajes (comandos de build, pistas de debug) entre sesiones automáticamente. No
