@@ -1,21 +1,36 @@
-# Claude Code — Guía técnica de implementación
+# Claude Code — Guía técnica de implementación (curso en dos partes)
 
 > Referencia copy-paste para montar cada pieza. Complementa a [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md)
-> (el hilo narrativo) con el **cómo**. Todos los artefactos ejecutables están en [`ejemplos/`](./ejemplos/).
+> (el hilo narrativo) con el **cómo**. Todos los artefactos ejecutables están en [`ejemplos/`](./ejemplos/);
+> [`docs/`](./docs/) es referencia de una instalación real.
 
 ## Índice
+
+**Parte 1 — Claude Code**
 
 1. [Instalación y CLI](#1-instalación-y-cli)
 2. [Memoria: CLAUDE.md, jerarquía y auto-memory](#2-memoria)
 3. [Settings y permisos](#3-settings-y-permisos)
 4. [Sesiones entre superficies](#4-sesiones)
-5. [MCP](#5-mcp)
-6. [Slash commands, skills y plugins](#6-slash-commands-skills-y-plugins)
-7. [Hooks](#7-hooks)
-8. [Automatización: headless, CI, scheduling, SDK](#8-automatización)
-9. [Metodología, GSD y CodeGraph](#9-metodología-gsd-y-codegraph)
+5. [Context window](#5-context-window)
+6. [Prompt caching](#6-prompt-caching)
+7. [MCP](#7-mcp)
+8. [Slash commands, skills y plugins](#8-slash-commands-skills-y-plugins)
+9. [Subagents y Agent Teams](#9-subagents-y-agent-teams)
+10. [Hooks](#10-hooks)
+11. [Automatización: headless, CI, scheduling, SDK](#11-automatización)
+
+**Parte 2 — La metodología**
+
+12. [El flujo y el ejemplo real](#12-metodología)
+13. [Las herramientas: CodeGraph, Serena, GSD](#13-herramientas-del-método)
+14. [Grafo de conocimiento de tickets](#14-grafo-de-conocimiento-de-tickets)
+15. [Transferir la metodología (starter-kit / Copilot)](#15-transferir-la-metodología)
+16. [Sincronización de máquinas](#16-sincronización-de-máquinas)
 
 ---
+
+# PARTE 1 — Claude Code
 
 ## 1. Instalación y CLI
 
@@ -36,7 +51,8 @@ claude --teleport            # traer una sesión web/móvil al terminal
 claude --continue            # continuar la última sesión
 claude -p "…" --output-format json   # salida estructurada para scripts
 ```
-Comandos dentro de la sesión: `/help`, `/mcp`, `/plugin`, `/schedule`, `/loop`, `/desktop`, `/config`.
+Comandos dentro de la sesión: `/help`, `/mcp`, `/plugin`, `/schedule`, `/loop`, `/desktop`, `/config`,
+`/context`, `/compact`, `/clear`, `/rewind`, `/agents`.
 Ver la referencia completa de CLI en la doc oficial (`/en/cli-reference`).
 
 ---
@@ -50,6 +66,8 @@ Ver la referencia completa de CLI en la doc oficial (`/en/cli-reference`).
 <repo>/<subdir>/CLAUDE.md    # se carga al entrar en esa subcarpeta
 <repo>/CLAUDE.local.md       # personal, NO versionado
 ```
+Sintaxis `@ruta/fichero` dentro de un CLAUDE.md importa otro doc al cargarlo
+(ejemplo: [`ejemplos/context/CLAUDE.import-example.md`](./ejemplos/context/CLAUDE.import-example.md)).
 
 ### Patrón de dos niveles (ver [`ejemplos/claude-md/`](./ejemplos/claude-md/))
 - **Nivel 1** = el `CLAUDE.md` siempre cargado: orientación + punteros de una línea. Pequeño.
@@ -59,7 +77,8 @@ Ver la referencia completa de CLI en la doc oficial (`/en/cli-reference`).
 
 ### Auto-memory
 Claude persiste aprendizajes (comandos de build, pistas de debug) entre sesiones automáticamente. No
-requiere que escribas nada; se acumula en el store de memoria del proyecto.
+requiere que escribas nada; se acumula en el store de memoria del proyecto (las primeras ~200 líneas se
+cargan al inicio — también cuenta contra el contexto, ver §5).
 
 ---
 
@@ -111,7 +130,59 @@ El mismo motor y los mismos `CLAUDE.md`/settings/MCP funcionan en todas.
 
 ---
 
-## 5. MCP
+## 5. Context window
+
+Referencia completa: [`ejemplos/context/`](./ejemplos/context/). Los números y comandos:
+
+**Qué carga la sesión antes de tu primer prompt:** system prompt ~4.200 tokens · auto-memory ~680
+(primeras 200 líneas / 25 KB) · entorno ~280 · índice de tools MCP ~120 en modo *deferred* (el schema
+completo de cada tool se carga al usarla) · tu jerarquía de `CLAUDE.md`. Ventana: 200K tokens en los
+modelos actuales (1M en beta vía API).
+
+```text
+/context                      # desglose de uso por bloque — mide antes de optimizar
+/compact céntrate en los cambios de la API y los ficheros modificados
+/clear                        # reset total entre tareas no relacionadas
+/rewind                       # (Esc+Esc) checkpoints: conversación, código o ambos
+```
+
+- Auto-compact salta cerca del límite; es **lossy** → mejor `/compact <foco>` manual y anticipado.
+- `/rewind` restaura **solo ediciones de Claude** (no cambios de Bash/externos — no sustituye a git).
+- MCP: cada server suma contexto → desactiva los que el proyecto no use (`.claude/settings.json`).
+- Investigación ruidosa → subagentes (§9): el ruido muere fuera; vuelve el resumen.
+- CLAUDE.md: regla de la doc oficial — *si puedes borrarlo sin que Claude se equivoque, bórralo*.
+
+---
+
+## 6. Prompt caching
+
+Referencia y demo ejecutable: [`ejemplos/prompt-caching/`](./ejemplos/prompt-caching/)
+([`cache_demo.py`](./ejemplos/prompt-caching/cache_demo.py)).
+
+**Mecánica (API):** se cachea un **prefijo contiguo** hasta un breakpoint `cache_control`; jerarquía
+estricta `Tools → System → Messages` (un cambio invalida su nivel y los siguientes).
+
+| | Escritura | Lectura |
+|---|---|---|
+| TTL 5 min (defecto) | 1.25× input | **0.1×** input |
+| TTL 1 h (`"ttl": "1h"`) | 2× input | **0.1×** input |
+
+```python
+system=[{ "type": "text", "text": STABLE_INSTRUCTIONS,
+          "cache_control": {"type": "ephemeral"} }]   # breakpoint AL FINAL de lo estable
+messages=[{"role": "user", "content": query}]          # lo variable, DESPUÉS (fuera del cache)
+```
+
+Diagnóstico en `response.usage`: `cache_creation_input_tokens` / `cache_read_input_tokens`.
+Mínimo cacheable ~1.024 tokens (4.096 en Haiku); máx. 4 breakpoints explícitos.
+
+**En Claude Code** el caching es automático (system + tools + historial = prefijo estable). Lo que tú
+controlas: no editar `CLAUDE.md`/settings a mitad de sesión (invalida el cache), pocos MCP (bloque de
+tools estable), y saber que `/compact` reescribe el historial (rompe el cache de mensajes una vez).
+
+---
+
+## 7. MCP
 
 Ver [`ejemplos/mcp/.mcp.json`](./ejemplos/mcp/.mcp.json). Scopes: **local** (`settings.local.json`),
 **project** (`.mcp.json` versionado), **user** (`~/.claude.json`).
@@ -133,7 +204,7 @@ Las tools aparecen como `mcp__<server>__<tool>` y se permiten/deniegan en el all
 
 ---
 
-## 6. Slash commands, skills y plugins
+## 8. Slash commands, skills y plugins
 
 **Slash command** — `.claude/commands/audit.md`:
 ```markdown
@@ -169,12 +240,46 @@ Regla mnemotécnica: **command = lo disparas tú** · **skill = lo decide Claude
 de plugins instalados así: `serena`, `context7`, `playwright`, y GSD (que trae decenas de skills `gsd-*`).
 Más detalle y ejemplos en [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/).
 
-**Subagentes** (tool `Task`): `Explore` (read-only), `Plan`, `general-purpose`, o especializados.
-Lánzalos en paralelo para trabajo independiente.
+---
+
+## 9. Subagents y Agent Teams
+
+Referencia completa + diagrama: [`ejemplos/subagents/`](./ejemplos/subagents/).
+
+**Built-ins (tool `Task`):** `Explore` (read-only), `Plan`, `general-purpose`. Lánzalos en paralelo para
+trabajo independiente; a tu sesión vuelve solo el resumen.
+
+**Custom** — `.claude/agents/<nombre>.md` (proyecto, versionado) o `~/.claude/agents/` (usuario);
+`/agents` los lista:
+```yaml
+---
+name: security-reviewer
+description: Revisa código en busca de vulnerabilidades. Úsalo tras cambios en auth o deps.
+tools: Read, Grep, Glob, Bash      # allowlist por agente (omitir = todos)
+model: opus                         # override opcional
+---
+Eres un ingeniero de seguridad senior. Reporta hallazgos con fichero:línea y severidad…
+```
+Ejemplos reales: [`security-reviewer`](./ejemplos/subagents/.claude/agents/security-reviewer.md) ·
+[`refactor-scout`](./ejemplos/subagents/.claude/agents/refactor-scout.md) (codifica la regla
+CodeGraph→Serena de la Parte 2). **Gotcha:** el subagente no hereda tu conversación — contexto en el
+prompt de lanzamiento. Corren en background por defecto.
+
+**Agent Teams (experimental):**
+```jsonc
+// ~/.claude/settings.json
+{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "teammateMode": "in-process" }    // o "auto" | "tmux" | "iterm2"
+```
+Lead + teammates (cada uno una **sesión completa**), task list compartida (`~/.claude/tasks/<team>/`),
+inboxes para mensajería directa. Se pide en lenguaje natural (*"monta un equipo con un architect y dos
+implementers; exige aprobación de plan"*); los roles reutilizan tus subagentes custom. Limitaciones: sin
+`/resume` in-process, un team por sesión, sin anidar; split-panes requiere tmux/iTerm2. Coste: cada
+teammate es una sesión — para side-quests usa subagentes.
 
 ---
 
-## 7. Hooks
+## 10. Hooks
 
 Todo en [`ejemplos/hooks/`](./ejemplos/hooks/). Config en `.claude/settings.json`:
 
@@ -210,7 +315,7 @@ sustituye por `process.cwd()` en `npm run setup`.
 
 ---
 
-## 8. Automatización
+## 11. Automatización
 
 Ver [`ejemplos/automation/`](./ejemplos/automation/).
 
@@ -234,37 +339,38 @@ for await (const m of query({ prompt: "…", options: { allowedTools: ["Edit"] }
 }
 ```
 Ejemplo completo: [`sdk.ts`](./ejemplos/automation/sdk.ts). El `query_hook.js` es un SDK dentro de un hook.
+Al SDK le aplican las mismas reglas de caching de §6: lo estable primero.
 
 ---
 
-## 9. Metodología, GSD y CodeGraph
+# PARTE 2 — La metodología
+
+## 12. Metodología
 
 Todo el material profundo (flujo de 11 etapas, ejemplo real end-to-end, prevalencia de tools) está en
 [`ejemplos/metodologia/`](./ejemplos/metodologia/). Resumen:
 
-### Metodología — el flujo real (ver [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md))
+### El flujo real (ver [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md))
 Agente = colaborador disciplinado; la autonomía se gana por-decisión. 11 etapas encadenadas por **gates
 deterministas**: orientar (history+status) → triaje inbound en el **contrato de salida** → regresión vs
 pre-existente → investigar con **oráculo determinista** (antes de la tirada de pago) → plan+acuerdo →
 TDD RED→GREEN → verificar (unit+scoped+regresión+contrato vía *wrapper* Y dentro de la imagen desplegada)
 → documentar → **sanitizar** (líneas añadidas)
 → handoff (el humano hace push/PR/deploy) → revisión automática + persistir.
-Caso concreto de principio a fin: [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md).
+Diagrama: [`metodologia/flow.png`](./ejemplos/metodologia/flow.png) (fuente `flow.mmd`, render
+`render_flow.py`). Caso concreto de principio a fin:
+[`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md).
 
 > **El gate outbound son tres checks** (no solo "los tests pasan"): (1) reproducir en la **etapa real de
 > salida** —el *wrapper* que reconstruye el contrato, no una función interna `extract()`—; (2) el JSON local
 > casa con el contrato; (3) verificarlo **dentro de la imagen desplegada** (descargar/construir la imagen del
 > runtime, montar el `src`, re-correr). Los tests en verde no son prueba de lo que se despliega.
 
-> **Portable:** el método se empaqueta como un *starter-kit* (plantillas de `STATUS`/`SHARP_EDGES`/handover/QA
-> + un script de bootstrap) para llevarlo a **otro repo** o a **GitHub Copilot** — la disciplina (plan→acuerdo,
-> contrato, gates de evidencia, el humano hace lo externo) es agnóstica de la herramienta.
-
 ### Prevalencia de tools (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
 El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden** (barato→caro,
 determinista→probabilístico):
 ```
-Orientar     -> STATUS.md/ledgers · git · gh                        (coste 0)
+Orientar     -> /kg (grafo de tickets) · STATUS.md/ledgers · git · gh   (coste 0)
 Navegar      -> CodeGraph codegraph_explore: fuente+rutas+blast radius+cobertura (1 llamada; trátala como YA leída)
 Refactor-chk -> Serena find_referencing_symbols (desambigua por clase)  OBLIGATORIO antes de renombrar/borrar
 Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (coste 0, reproducible)
@@ -274,17 +380,9 @@ Desplegado   -> Docker: repro dentro de la imagen del runtime (etapa real = wrap
 Solo al final-> la tirada del LLM, para VERIFICAR el fix (no para diagnosticar)
 ```
 
-### GSD ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método hecho tooling
-Ciclo por fases con estado versionado en `.planning/` y subagentes especializados:
-```
-/gsd-new-project  -> PROJECT.md + ROADMAP.md
-/gsd-plan-phase   -> PLAN.md   (+ gate gsd-plan-checker, goal-backward)
-/gsd-execute-phase-> ejecución en olas, commits atómicos (gsd-executor)
-/gsd-verify-work  -> VERIFICATION.md (gsd-verifier: verifica el OBJETIVO, no solo las tareas)
-/gsd-progress     # comando situacional: qué toca ahora
-```
-Subagentes: `gsd-planner`, `gsd-plan-checker`, `gsd-executor`, `gsd-code-reviewer`, `gsd-verifier`,
-`gsd-phase-researcher`.
+---
+
+## 13. Herramientas del método
 
 ### CodeGraph ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — inteligencia de código local
 Índice tree-sitter → SQLite en `.codegraph/` (sin API keys). Devuelve símbolos + rutas de llamada +
@@ -300,10 +398,35 @@ Es el **primer** tool de navegación (antes que grep/Read); trata la fuente que 
 re-abras ese fichero). El MCP **no tiene proyecto por defecto** salvo que fijes `--path`: hazlo y
 `codegraph_explore` no necesita `projectPath`; pásalo solo para consultar **otro** repo indexado (ya indexamos
 `monolith` y `frontend`). En WSL2 `/mnt` el watcher puede perder cambios → `codegraph sync` tras editar.
-Complementa a Serena: `find_referencing_symbols` sigue siendo el chequeo **preciso** antes de renombrar/borrar
-(CodeGraph `impact` mezcla métodos homónimos; Serena los desambigua por clase).
 
-### Grafo de conocimiento de tickets — CodeGraph, pero para tickets/lecciones (ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md))
+### Serena ([`ejemplos/serena/`](./ejemplos/serena/)) — navegación semántica vía LSP
+```bash
+claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server
+```
+Tools clave: `find_symbol` (con `body=true`), `get_symbols_overview`, `search_for_pattern`, y sobre todo
+**`find_referencing_symbols`** — el chequeo **preciso** antes de renombrar/borrar: desambigua métodos
+homónimos por clase, donde el `impact` plano de CodeGraph los mezcla. Complementa a CodeGraph, no lo
+sustituye. El subagente [`refactor-scout`](./ejemplos/subagents/.claude/agents/refactor-scout.md)
+empaqueta el orden CodeGraph→Serena→grep como procedimiento.
+
+### GSD ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método hecho tooling
+Ciclo por fases con estado versionado en `.planning/` y subagentes especializados:
+```
+/gsd-new-project  -> PROJECT.md + ROADMAP.md
+/gsd-plan-phase   -> PLAN.md   (+ gate gsd-plan-checker, goal-backward)
+/gsd-execute-phase-> ejecución en olas, commits atómicos (gsd-executor)
+/gsd-verify-work  -> VERIFICATION.md (gsd-verifier: verifica el OBJETIVO, no solo las tareas)
+/gsd-progress     # comando situacional: qué toca ahora
+```
+Subagentes: `gsd-planner`, `gsd-plan-checker`, `gsd-executor`, `gsd-code-reviewer`, `gsd-verifier`,
+`gsd-phase-researcher` — subagentes custom (§9) distribuidos como plugin (§8). Setup real de CodeGraph+GSD
+en una instalación: [`docs/SETUP_CODEGRAPH_GSD.md`](./docs/SETUP_CODEGRAPH_GSD.md).
+
+---
+
+## 14. Grafo de conocimiento de tickets
+
+**CodeGraph, pero para tickets/lecciones** (ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md)).
 Si CodeGraph indexa el *código*, este skill (`/kg`) indexa la **memoria del proyecto** — writeups por ticket,
 "sharp edges", runbooks, notas de memoria — en un grafo navegable. Nodos = tickets + símbolos + invariantes;
 aristas **tipadas** (`references`/`supersedes`/`conceptually_related_to`, con `confidence`); comunidades = zonas
@@ -316,13 +439,52 @@ de peligro. **Determinista, sin LLM en la consulta:**
 ```
 Se construye con `graphify` sobre un corpus curado de `.md` (un `manifest.txt` diffeable). **Gotcha:** `graphify`
 respeta `.gitignore` y todo `data/` lo está → se monta el corpus en un **scratch fuera del repo** y se copian
-los artefactos de vuelta. Está **enganchado a la regla history-first del `CLAUDE.md`**: corre `/kg <ticket|tema>`
-*antes* de hacer grep en `data/changes/`; una llamada saca los tickets relacionados + la zona de peligro a leer
-(apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es **recall en zonas densas**; aristas
-`EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo bajo `data/` gitignored (nombres internos → interno).
+los artefactos de vuelta. Está **enganchado a la regla history-first del `CLAUDE.md`** (etapa 1, Orientar):
+corre `/kg <ticket|tema>` *antes* de hacer grep en `data/changes/`; una llamada saca los tickets relacionados
++ la zona de peligro a leer (apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es **recall
+en zonas densas**; aristas `EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo bajo `data/` gitignored
+(nombres internos → interno). Es un artefacto **derivado**: nunca viaja entre máquinas; se reconstruye donde
+esté el corpus (§16).
 
-### Runbook de ops: sincronizar el workspace entre máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
-Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops. **Asimétrico:**
+---
+
+## 15. Transferir la metodología
+
+Material real: [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) —
+[`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md) (la guía de adaptación),
+[`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md) (empaquetar y
+arrancar), [`templates/`](./docs/ai-agents-code-methodology/templates/) (plantillas) y
+[`scripts/bootstrap-new-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-new-repo.ps1.txt).
+
+**Qué viaja sin cambios:** plan→acuerdo→implementar · verificar en el contrato del consumidor · resolver
+la clase general · rastro durable · el humano posee lo externo.
+
+**Qué se re-mapea:** contrato (HTTP/DB/evento/artefacto), tracker (Jira/Boards/Issues), pirámide de tests,
+runtime desplegado, reglas de sanitización.
+
+**Bootstrap en el repo destino:**
+```powershell
+Expand-Archive ai-agent-methodology-package.zip -DestinationPath data/changes
+Rename-Item …/scripts/bootstrap-new-repo.ps1.txt bootstrap-new-repo.ps1
+pwsh data/changes/ai-agent-methodology/scripts/bootstrap-new-repo.ps1
+# crea: STATUS.md · FOLLOWUPS.md · SHARP_EDGES.md · plantillas de handover y QA
+```
+(El script viaja como `.ps1.txt` para esquivar los bloqueos de contenido activo del correo.)
+
+**Fallback sin grafo de tickets** (80% del valor, setup mínimo): `STATUS.md` newest-first + carpetas por
+ticket · búsqueda léxica por síntoma/símbolo/campo del contrato · historia de commits (solapamiento de
+ficheros) como sustituto ligero del grafo · sección corta de "danger zones".
+
+**Checklist de primer día:** rellenar `STATUS.md` · 3-5 invariantes en `SHARP_EDGES.md` · definir el
+contrato de salida · comandos de test scoped · un issue completo con RED→GREEN + verificación de contrato.
+
+---
+
+## 16. Sincronización de máquinas
+
+Procedimiento real (sanitizado) que aplica los mismos principios a una tarea de ops
+(ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md);
+runbooks de la instalación real en [`docs/synchro/`](./docs/synchro/)). **Asimétrico:**
 
 ```bash
 # OUTBOUND (principal -> portátil): COPIA COMPLETA. -h dereferencia el symlink de .aws (crítico);
@@ -344,7 +506,7 @@ tar -xzf "$TARBALL" -C "$REPO"                         # solo los docs gitignore
 diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # ¿solo adiciones? quedarse. ¿ediciones propias? STOP
 ```
 
-**Dos huecos, dos subcomandos idempotentes** (el workspace lleva un grafo `/kg` — subsección anterior): en un portátil
+**Dos huecos, dos subcomandos idempotentes** (el workspace lleva un grafo `/kg` — §14): en un portátil
 nuevo, `kg_refresh.sh bootstrap` instala el tooling que no va en el bundle y fija el intérprete; y como la
 memoria (`~/.claude`) **no** viaja en el delta, `snapshot-memory` la parquea bajo `data/` (para que viaje) y
 `restore-memory` la fusiona de vuelta con backup en la principal, antes de `/kg-refresh`. Punto de entrada

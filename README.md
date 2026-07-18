@@ -1,44 +1,60 @@
-# Claude Code — Presentación y guía técnica
+# Claude Code — Curso en dos partes (presentación + guías)
 
-Material para una charla + vídeo sobre **Claude Code**: una presentación (`.pptx`) y dos guías escritas,
-con ejemplos reales y ejecutables. En español, orientado a **desarrolladores**.
+Material para un **curso/workshop** sobre **Claude Code**: una única presentación (`.pptx`) con **dos
+partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables. En español, orientado a
+**desarrolladores**.
 
-Cubre las cinco secciones pedidas — **instalación y uso básico · memoria, instrucciones y sesiones · MCP ·
-plugins, tools y skills · automatización** — más la **metodología real** de trabajo (GSD + CodeGraph +
-agente disciplinado).
+- **Parte 1 — Claude Code:** instalación y uso básico · memoria, instrucciones y sesiones · **contexto
+  (context window + prompt caching)** · MCP · plugins, tools y skills · **subagents y agent teams** ·
+  automatización.
+- **Parte 2 — La metodología (agnóstica de la herramienta):** el flujo real de 11 etapas con gates ·
+  las herramientas del método (CodeGraph, Serena, GSD, oráculos) · el grafo de conocimiento de tickets ·
+  la transferencia a otro agente (GitHub Copilot) · la sincronización de máquinas.
 
 ## Contenido
 
 | Archivo | Qué es |
 |---|---|
-| [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente: hilo a contar por slide + frases de cierre 🗣️. |
-| [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código). |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 19 slides). |
+| [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente, en dos partes: hilo a contar por slide + frases de cierre 🗣️ + links al código. |
+| [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código), en las mismas dos partes. |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 33 slides, con separadores de parte). |
 | [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
-| [`ejemplos/`](./ejemplos/) | Artefactos reales: hooks, CLAUDE.md, MCP, skills, GSD, CodeGraph, automatización. |
-| [`docs/DISENO.md`](./docs/DISENO.md) | Documento de diseño / decisiones. |
+| [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
+| [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
 
-## Ejemplos
+## Ejemplos (por sección del curso)
 
-- [`ejemplos/hooks/`](./ejemplos/hooks/) — 5 hooks reales (seguridad, observabilidad, formato, type-check, "IA revisando IA") + payloads.
-- [`ejemplos/claude-md/`](./ejemplos/claude-md/) — el patrón de CLAUDE.md de dos niveles.
-- [`ejemplos/mcp/`](./ejemplos/mcp/) — `.mcp.json` con scopes y secretos por entorno.
-- [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill.
-- [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling.
-- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), un **runbook de ops real** (sincronizar el workspace entre máquinas) y una nota de que el método es un **kit portable** (a otro repo / GitHub Copilot) + el diagrama del flujo.
-- [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) — las dos herramientas de metodología, en profundidad.
+**Parte 1:**
+- [`ejemplos/claude-md/`](./ejemplos/claude-md/) — el patrón de CLAUDE.md de dos niveles (§02).
+- [`ejemplos/context/`](./ejemplos/context/) — gestión del context window: anatomía, comandos, higiene (§03).
+- [`ejemplos/prompt-caching/`](./ejemplos/prompt-caching/) — cómo funciona el caching + demo ejecutable `cache_demo.py` (§03).
+- [`ejemplos/mcp/`](./ejemplos/mcp/) — `.mcp.json` con scopes y secretos por entorno (§04).
+- [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill (§05).
+- [`ejemplos/subagents/`](./ejemplos/subagents/) — subagentes custom (`.claude/agents/`), agent teams y el diagrama subagente-vs-team (§06).
+- [`ejemplos/hooks/`](./ejemplos/hooks/) — 5 hooks reales (seguridad, observabilidad, formato, type-check, "IA revisando IA") + payloads (§07).
+- [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling (§07).
 
-## Regenerar el deck
+**Parte 2:**
+- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), el **runbook de ops** (sincronizar el workspace entre máquinas) y el diagrama del flujo (§08, §12).
+- [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) · [`ejemplos/serena/`](./ejemplos/serena/) — las herramientas del método, en profundidad (§09).
+- [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md) — el grafo de conocimiento de tickets (§10).
+- [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§11).
+- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización entre máquinas (§12).
+
+## Regenerar el deck y los diagramas
 
 ```bash
-pip install python-pptx
-python presentacion/build_pptx.py     # -> presentacion/Claude_Code_Presentacion.pptx
+pip install python-pptx pillow
+python presentacion/build_pptx.py            # -> presentacion/Claude_Code_Presentacion.pptx
+python ejemplos/metodologia/render_flow.py   # -> flow.png (flujo de 11 etapas)
+python ejemplos/subagents/render_agents.py   # -> agents.png (subagentes vs agent teams)
 ```
 
 ## Fuentes
 
 Documentación oficial <https://code.claude.com/docs> · curso de hooks de Anthropic · GSD
-<https://github.com/tomascortereal/claude-code-setup> · CodeGraph <https://colbymchenry.github.io/codegraph/>.
+<https://github.com/tomascortereal/claude-code-setup> · CodeGraph <https://colbymchenry.github.io/codegraph/> ·
+Serena <https://github.com/oraios/serena>.
 
 > Los ejemplos derivados de un proyecto profesional real están **sanitizados** (sin nombres de cliente,
 > IDs de ticket ni secretos).
