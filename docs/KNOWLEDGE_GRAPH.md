@@ -76,6 +76,13 @@ El motor ya existe en `graphify`: `explain` (vecinos) y `path` (camino más cort
 Los tokens se emparejan de forma difusa: `SST-1234`, `sst-1234`, `get_letter_end`, `"fin de carta"` resuelven.
 Si un tema no resuelve, `find <substr>` da el id exacto para reintentar.
 
+> **"Sin LLM" no es "gratis" — es coste menor y amortizado.** La inferencia cara (la extracción con
+> subagentes) se paga **una vez** en `/kg-refresh`; cada consulta `explain`/`path`/`find` es luego un
+> algoritmo determinista que lee `graph.json` → **cero inferencia**. El único coste por consulta es que el
+> agente lee un output pequeño (como un `grep`): menor y dirigido, no cero. Visto así, construir el grafo es
+> una **inversión** — sin inferencia por consulta, resultados **deterministas y reproducibles**, y
+> razonamiento caro sustituido por lookup barato → mejor rendimiento y ahorro de tiempo/dinero por tarea.
+
 ## 5. Enganchado al flujo de trabajo (el objetivo real)
 
 Un grafo que nadie consulta no vale. La regla **history-first** del `CLAUDE.md` ahora dice: **antes de diseñar

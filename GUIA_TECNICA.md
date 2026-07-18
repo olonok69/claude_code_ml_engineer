@@ -373,10 +373,10 @@ Diagrama: [`metodologia/flow.png`](./ejemplos/metodologia/flow.png) (fuente `flo
 El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden** (barato→caro,
 determinista→probabilístico):
 ```
-Orientar     -> /kg (grafo de tickets) · STATUS.md/ledgers · git · gh   (coste 0)
+Orientar     -> /kg (grafo de tickets) · STATUS.md/ledgers · git · gh   (sin inferencia)
 Navegar      -> CodeGraph codegraph_explore: fuente+rutas+blast radius+cobertura (1 llamada; trátala como YA leída)
 Refactor-chk -> Serena find_referencing_symbols (desambigua por clase)  OBLIGATORIO antes de renombrar/borrar
-Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (coste 0, reproducible)
+Diagnosticar -> oráculo determinista (parser/validador/_diag_*.py)  (sin inferencia, reproducible)
 Entorno      -> AWS CLI (CloudWatch, lambda get-function, SQS/DLQ)   (read-only)
 Contrato     -> Playwright / F12 sobre el endpoint de salida
 Desplegado   -> Docker: repro dentro de la imagen del runtime (etapa real = wrapper); tests verdes != lo enviado
@@ -424,6 +424,12 @@ Ciclo por fases con estado versionado en `.planning/` y subagentes especializado
 Subagentes: `gsd-planner`, `gsd-plan-checker`, `gsd-executor`, `gsd-code-reviewer`, `gsd-verifier`,
 `gsd-phase-researcher` — subagentes custom (§9) distribuidos como plugin (§8). Setup real de CodeGraph+GSD
 en una instalación: [`docs/SETUP_CODEGRAPH_GSD.md`](./docs/SETUP_CODEGRAPH_GSD.md).
+
+> **Honestidad — ¿lo usamos aquí?** **No.** GSD está instalado y encarna la misma disciplina, pero **este
+> proyecto no corre GSD**: usa el flujo de 11 etapas + `data/changes/` (`STATUS.md`, `<TICKET>/<TICKET>.md`,
+> `PLAYBOOK.md`, `SHARP_EDGES.md`…), **más depurado y afinado** a fixes por ticket sobre un servicio en
+> producción. GSD tiene más sentido en un **greenfield multi-componente** (diseñar una aplicación entera con
+> roadmap → fases). Aquí es el método **productizado**, no nuestra herramienta diaria.
 
 ---
 
@@ -565,3 +571,11 @@ a leer (apunta a *qué leer*, no lo sustituye). Honestidad: la ganancia real es 
 gitignored (los nodos llevan nombres internos → interno; compartir fuera = pasada de sanitización aparte).
 Es un artefacto **derivado**: nunca viaja entre máquinas; se reconstruye donde esté el corpus (§15, con
 `bootstrap` / `snapshot-memory` / `restore-memory` cerrando el círculo).
+
+> **Coste — honesto, y por qué compensa.** "Sin LLM en la consulta" **no** es "gratis": el razonamiento caro
+> se paga **una vez** al construir el grafo (`/kg-refresh`, con subagentes); cada `/kg` es luego un algoritmo
+> determinista sobre `graph.json` → **cero inferencia**, con el único coste de que Claude lee un output corto
+> (como un `grep`) — coste **menor y dirigido**, no cero. El coste de construir (grafo, oráculos, skills
+> deterministas) se **amortiza**: es inversión → sin inferencia por consulta, respuestas **deterministas y
+> reproducibles** (mejor resultado), razonamiento caro sustituido por lookup barato → **ahorro de tiempo y
+> dinero** por tarea. Se paga una vez, se cobra en cada uso.

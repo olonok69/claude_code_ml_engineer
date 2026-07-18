@@ -22,7 +22,7 @@ secretos); las herramientas, gates y organización son los reales.
 
 El agente hace la anchura (investigar, planificar, implementar, testear, documentar); el humano es dueño
 de las decisiones y de **toda acción externa**. Entre medias, una serie de **gates deterministas**
-—contrato de salida, oráculo gratis, batería de tests, prueba no-op, escaneo de sanitización— convierten
+—contrato de salida, oráculo determinista (sin inferencia), batería de tests, prueba no-op, escaneo de sanitización— convierten
 la capacidad bruta del modelo en salida fiable.
 
 ## Cómo encaja con las herramientas del repo
