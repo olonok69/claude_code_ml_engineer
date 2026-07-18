@@ -1,26 +1,45 @@
-# Claude Code — Guía de presentación
+# Claude Code — Guía de presentación (curso en dos partes)
 
-> Guía narrativa para la charla + vídeo. Está pensada para el/la **ponente**: cada sección mapea a un
+> Guía narrativa para el curso/workshop. Está pensada para el/la **ponente**: cada sección mapea a un
 > bloque de slides del deck ([`presentacion/`](./presentacion/)) e incluye el hilo a contar, los puntos
 > clave y una frase de cierre 🗣️ lista para la diapositiva. Audiencia: **técnica / desarrolladores**.
 >
+> El deck es **una sola presentación** con **dos partes diferenciadas**:
+> - **Parte 1 — Claude Code:** la herramienta, de la instalación a los equipos de agentes.
+> - **Parte 2 — La metodología:** cómo se trabaja de verdad con un agente en producción. Es **agnóstica
+>   de la herramienta** — se demuestra con Claude Code, pero viaja a otros agentes (sección 11).
+>
 > El detalle de implementación (configs, código copy-paste) está en [`GUIA_TECNICA.md`](./GUIA_TECNICA.md)
-> y en [`ejemplos/`](./ejemplos/).
+> y en [`ejemplos/`](./ejemplos/). La carpeta [`docs/`](./docs/) es material de referencia de una
+> instalación real donde se aplica la metodología a diario.
 
 ---
 
 ## Índice
 
+**Parte 1 — Claude Code**
+
 0. [Qué es Claude Code (encuadre)](#0-qué-es-claude-code)
 1. [Instalación y uso básico](#1-instalación-y-uso-básico)
 2. [Memoria, instrucciones y sesiones](#2-memoria-instrucciones-y-sesiones)
-3. [MCP — conectar tus herramientas](#3-mcp)
-4. [Plugins, tools y skills](#4-plugins-tools-y-skills)
-5. [Automatización](#5-automatización)
-6. [Metodología real: GSD + CodeGraph + agente disciplinado](#6-metodología-real)
-7. [Cierre](#7-cierre)
+3. [Contexto: context window y prompt caching](#3-contexto)
+4. [MCP — conectar tus herramientas](#4-mcp)
+5. [Plugins, tools y skills](#5-plugins-tools-y-skills)
+6. [Subagents y Agent Teams](#6-subagents-y-agent-teams)
+7. [Automatización](#7-automatización)
+
+**Parte 2 — La metodología (agnóstica)**
+
+8. [La metodología: principio, flujo y ejemplo real](#8-la-metodología)
+9. [Las herramientas del método: CodeGraph, Serena, GSD…](#9-las-herramientas-del-método)
+10. [El grafo de conocimiento de tickets](#10-el-grafo-de-conocimiento-de-tickets)
+11. [Transferir la metodología a otro agente](#11-transferir-la-metodología)
+12. [Sincronización de máquinas](#12-sincronización-de-máquinas)
+13. [Cierre](#13-cierre)
 
 ---
+
+# PARTE 1 — Claude Code
 
 ## 0. Qué es Claude Code
 
@@ -113,7 +132,55 @@ Las sesiones no están atadas a una superficie: empieza en la web/móvil y tráe
 
 ---
 
-## 3. MCP
+## 3. Contexto
+
+**Hilo:** Aquí está la sección que explica **por qué** el patrón de dos niveles de la sección anterior no
+es manía: el context window es el recurso que gobierna rendimiento **y** coste. Dos mitades: gestionarlo
+(context window) y no pagarlo dos veces (prompt caching). Material: [`ejemplos/context/`](./ejemplos/context/)
+y [`ejemplos/prompt-caching/`](./ejemplos/prompt-caching/).
+
+### 3a. Context window — el recurso que gobierna todo
+
+**Qué lo llena antes de que escribas nada:** system prompt (~4.2k tokens), auto-memory (~680), entorno
+(~280), el índice de tools MCP, y tu `CLAUDE.md`. Después: conversación, ficheros leídos, output de
+comandos. La ventana es de 200K tokens (1M en beta vía API), pero el rendimiento **degrada antes de
+llenarla** — contexto con ruido = peores decisiones.
+
+**Los mandos:**
+- `/context` — visualiza el uso, bloque a bloque. Mide antes de optimizar.
+- `/compact [instrucciones]` — compacta guiando qué sobrevive (*"céntrate en los cambios de la API"*).
+  El auto-compact salta solo cerca del límite; anticiparse con foco es mejor (la compactación es lossy).
+- `/clear` — reset entre tareas no relacionadas. Contexto fresco > resumen de ruido.
+- `/rewind` (Esc+Esc) — checkpoints: restaura conversación, código o ambos; condensa tramos.
+
+**Higiene que aplicamos de verdad:** CLAUDE.md mínimo (dos niveles); `@imports` y CLAUDE.md de subcarpeta
+que cargan bajo demanda; desactivar servers MCP que no usas; investigar en **subagentes** (sección 6) para
+que el ruido no viva en tu sesión; lecturas con puntería en vez de "entiende todo el auth".
+
+### 3b. Prompt caching — no pagar el mismo contexto dos veces
+
+**El mecanismo:** cada turno reenvía TODO el contexto. La API cachea el **prefijo estable** (orden
+estricto: `Tools → System → Messages`): escribir cache cuesta 1.25× (2× a 1h de TTL), **leerlo cuesta
+0.1×**. Una sesión de 50 turnos relee el prefijo 50 veces a precio de saldo.
+
+**En Claude Code no configuras nada** — lo aplica solo. Pero tus decisiones determinan si acierta:
+- CLAUDE.md pequeño y **estable** → prefijo que nunca cambia → hits.
+- Editar CLAUDE.md/settings a mitad de sesión → invalida el cache desde ahí.
+- Muchos MCP → bloque de tools grande y cambiante → escrituras caras.
+- `/compact` reescribe historial → rompe el cache de mensajes una vez, y sigue.
+
+Demo ejecutable con la API (ver los contadores `cache_read_input_tokens`):
+[`ejemplos/prompt-caching/cache_demo.py`](./ejemplos/prompt-caching/cache_demo.py).
+
+**El puente que une 3a y 3b (y adelanta la Parte 2):** contexto lean y estable **rinde mejor y cuesta
+menos a la vez**. Y la "prevalencia de tools" de la metodología (CodeGraph antes que leer ficheros) es,
+en el fondo, política de contexto: máxima señal por token.
+
+🗣️ *"El context window es tu presupuesto y el prompt caching tu descuento: lean y estable gana en los dos."*
+
+---
+
+## 4. MCP
 
 **Hilo:** **MCP (Model Context Protocol)** es el estándar abierto para enchufar Claude a datos y
 herramientas externas: Drive, Jira, Slack, tu base de datos, un navegador, tu tooling propio. Cada server
@@ -135,13 +202,14 @@ claude mcp list        # estado
 día), `playwright` (verificar la UI en un navegador real), `codegraph` (grafo del código), `supabase`.
 
 **Buenas prácticas:** secretos por variable de entorno (nunca en el JSON versionado); el server disponible
-≠ tool permitida (sigues controlando con el allowlist). Config de ejemplo en [`ejemplos/mcp/`](./ejemplos/mcp/).
+≠ tool permitida (sigues controlando con el allowlist); y — enlaza con la sección 3 — **cada server suma
+contexto**: desactiva los que el proyecto no use. Config de ejemplo en [`ejemplos/mcp/`](./ejemplos/mcp/).
 
 🗣️ *"MCP convierte a Claude de 'sabe de código' a 'sabe de TU sistema': tus docs, tus tickets, tu navegador."*
 
 ---
 
-## 4. Plugins, tools y skills
+## 5. Plugins, tools y skills
 
 **Hilo:** Cuatro capas de extensibilidad, de simple a potente.
 
@@ -170,14 +238,63 @@ día), `playwright` (verificar la UI en un navegador real), `codegraph` (grafo d
 La idea en una frase: el **slash command lo disparas tú**; la **skill la decide Claude** (por su
 descripción); el **plugin es el vehículo de reparto** de ambas cosas —y de agentes, MCP y hooks— versionado.
 
-**Subagentes:** con `Task` lanzas agentes con su propio contexto (`Explore`, `Plan`, `general-purpose`,
-o especializados) para paralelizar sin ensuciar tu sesión.
-
 🗣️ *"Slash command = atajo que invocas tú. Skill = capacidad que Claude decide usar. Plugin = las dos, distribuibles."*
 
 ---
 
-## 5. Automatización
+## 6. Subagents y Agent Teams
+
+**Hilo:** La quinta capa de extensibilidad merece sección propia: no extender *qué sabe hacer* Claude,
+sino **cuántos Claudes trabajan y cómo se coordinan**. Tres escalones: subagentes built-in → subagentes
+custom → agent teams. Todo el material (incl. el diagrama) en [`ejemplos/subagents/`](./ejemplos/subagents/).
+
+### 6a. Subagentes (tool `Task`) — aislar contexto
+
+Claude lanza **subagentes** con su propio context window: la investigación sucia sucede "fuera" y a tu
+sesión vuelve **solo el resumen**. Built-ins: `Explore` (read-only), `Plan`, `general-purpose`. Es el
+mecanismo de higiene de contexto de la sección 3 — y se pueden lanzar **en paralelo** para trabajo
+independiente.
+
+### 6b. Subagentes custom — `.claude/agents/*.md`
+
+Un Markdown con frontmatter (`name`, `description`, `tools`, `model`) + system prompt propio. La
+`description` guía la auto-selección (como en las skills); `tools` es un allowlist por agente; `/agents`
+los lista. Scopes: usuario (`~/.claude/agents/`) o proyecto (versionado). Dos ejemplos reales:
+- [`security-reviewer`](./ejemplos/subagents/.claude/agents/security-reviewer.md) — revisor con tools read-only.
+- [`refactor-scout`](./ejemplos/subagents/.claude/agents/refactor-scout.md) — codifica la regla
+  CodeGraph→Serena de la metodología (Parte 2) como procedimiento de agente.
+
+**El gotcha que hay que contar:** el subagente **no hereda tu conversación** — el contexto necesario va
+en el prompt de lanzamiento.
+
+### 6c. Agent Teams (experimental) — coordinar sesiones
+
+Un **team** = un lead + teammates, cada uno una **sesión completa** de Claude Code, con **task list
+compartida** (`~/.claude/tasks/<team>/`) y **mensajería directa** entre teammates (inboxes) — pueden
+debatir hallazgos, no solo reportar hacia arriba. Se activa con `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`;
+display in-process o split-panes (tmux/iTerm2). Los roles pueden reutilizar tus subagentes custom.
+
+**Cuándo cada uno (la diapositiva de decisión):**
+
+| | Subagente | Agent team |
+|---|---|---|
+| Contexto | Aislado; devuelve un resumen | Cada teammate = sesión completa |
+| Comunicación | Solo resultado → principal | Task list + mensajes entre teammates |
+| Coste | Bajo | Alto (N sesiones) |
+| Úsalo para | Side-quests: investigar, explorar, verificar | Paralelismo real: revisión multi-capa, hipótesis en competencia |
+
+Reglas prácticas: 3–5 teammates; **particionar ficheros** (cada teammate dueño de los suyos); contexto
+completo en el prompt de arranque. Limitaciones hoy: sin `/resume` in-process, un team por sesión, sin
+teams anidados.
+
+**Puente a la Parte 2:** GSD (sección 9) es exactamente esto en producción — `gsd-planner`,
+`gsd-executor`, `gsd-verifier` son subagentes custom distribuidos como plugin.
+
+🗣️ *"Subagente para que el ruido muera fuera de tu sesión; team para que varios Claudes debatan. El coste no es el mismo."*
+
+---
+
+## 7. Automatización
 
 **Hilo:** Cuatro niveles, del control determinista a la autonomía total. (Aquí es donde el curso de hooks
 brilla — todo en [`ejemplos/hooks/`](./ejemplos/hooks/) y [`ejemplos/automation/`](./ejemplos/automation/).)
@@ -214,11 +331,14 @@ Cinco hooks de ejemplo, todos reales:
 
 ---
 
-## 6. Metodología real
+# PARTE 2 — La metodología (agnóstica de la herramienta)
 
-**Hilo:** Herramientas sin método = caos rápido. Esta es la parte más valiosa de la charla: **cómo se
-trabaja de verdad con Claude Code en un proyecto en producción.** No es un flujo perfecto — es el que
-usamos, sujeto a revisión constante. Todo el material está en
+## 8. La metodología
+
+**Hilo:** Herramientas sin método = caos rápido. Esta es la parte más valiosa del curso: **cómo se
+trabaja de verdad con un agente de coding en un proyecto en producción.** No es un flujo perfecto — es el
+que usamos, sujeto a revisión constante. Y es **agnóstico**: se demuestra con Claude Code, pero la
+disciplina viaja (sección 11). Todo el material está en
 [`ejemplos/metodologia/`](./ejemplos/metodologia/) (sanitizado).
 
 ### El principio
@@ -246,24 +366,6 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 10. **Handoff** — el humano (o un tool suyo, p. ej. Cursor) hace push/PR/deploy. El agente **nunca**.
 11. **Revisión automática + persistir** — triar hallazgos del bot como los de un humano; codificar lecciones.
 
-### Prevalencia de tools — qué usa Claude y cuándo (ver [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
-El `CLAUDE.md` no solo dice *qué* hacer, sino **con qué tool y en qué orden**. Regla real (actualizada):
-*"para 'qué es esto / quién depende / qué toco', un `codegraph_explore` **primero** — fuente + rutas de
-llamada + blast radius + flags de cobertura de tests en una sola llamada (trata la fuente que devuelve como
-YA leída, no la re-abras); Serena `find_referencing_symbols` para el chequeo **preciso** antes de
-renombrar/borrar; grep/Read solo para literales."* Orden barato→caro:
-
-| Etapa | Herramienta |
-|---|---|
-| Orientar | `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
-| Navegar (survey) | **CodeGraph** `codegraph_explore` — fuente + rutas + blast radius + cobertura, en 1 llamada |
-| Refactor-check preciso | **Serena** `find_referencing_symbols` — desambigua por clase; **obligatorio** antes de renombrar/borrar |
-| Diagnosticar | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
-| Entorno (logs, config) | **AWS CLI** — herramienta de debugging de primera clase |
-| Contrato de salida | **Playwright** / F12 sobre el endpoint que ve el consumidor |
-| Verificar lo desplegado | **Docker** — repro dentro de la imagen del runtime (montar el `src`, re-correr); los tests en verde ≠ lo enviado |
-| Solo al final | La tirada del **LLM** — para *verificar* el fix, no para diagnosticar |
-
 ### Un ejemplo real (ver [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
 Bug: *"un campo sale vacío en la UI pero está en el PDF."* → Orientar (STATUS.md encuentra un
 `SHARP_EDGES` que restringe el fix) → confirmar el vacío en el JSON del contrato (Playwright) →
@@ -273,27 +375,141 @@ pre-existente, no regresión → Serena+CodeGraph localizan el detector de fin d
 byte-idéntica (prueba no-op) + contrato reproducido en local (vía *wrapper*) y **dentro de la imagen
 desplegada** → documentar → sanitizar → el humano hace el push. Un review-bot detecta un caso de columna a la izquierda → se añade el test y va al `PLAYBOOK`.
 
-### El tooling que lo encarna
+🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
+
+---
+
+## 9. Las herramientas del método
+
+**Hilo:** El flujo dice *qué* hacer; esta sección dice **con qué tool y en qué orden** — y qué hace cada
+una. La regla vive en el `CLAUDE.md` del proyecto: no basta con "tener MCP instalado", el agente debe
+tirar de la tool correcta **automáticamente**. Detalle:
+[`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md).
+
+### La prevalencia: barato → caro, determinista → probabilístico
+
+Regla real (actualizada): *"para 'qué es esto / quién depende / qué toco', un `codegraph_explore`
+**primero** — fuente + rutas de llamada + blast radius + flags de cobertura de tests en una sola llamada
+(trata la fuente que devuelve como YA leída, no la re-abras); Serena `find_referencing_symbols` para el
+chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
+
+| Etapa del flujo | Herramienta |
+|---|---|
+| Orientar (1) | `/kg` (grafo de tickets, sección 10) · `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
+| Navegar / investigar (4) | **CodeGraph** `codegraph_explore` — fuente + rutas + blast radius + cobertura, en 1 llamada |
+| Refactor-check preciso (4-6) | **Serena** `find_referencing_symbols` — desambigua por clase; **obligatorio** antes de renombrar/borrar |
+| Diagnosticar (4) | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
+| Entorno: logs, config (4) | **AWS CLI** — herramienta de debugging de primera clase (read-only) |
+| Contrato de salida (2, 7) | **Playwright** / F12 sobre el endpoint que ve el consumidor |
+| Verificar lo desplegado (7) | **Docker** — repro dentro de la imagen del runtime; los tests en verde ≠ lo enviado |
+| Solo al final (7) | La tirada del **LLM** — para *verificar* el fix, no para diagnosticar |
+
+### Qué es cada herramienta (una frase cada una, luego slide propia para las tres grandes)
+
+- **CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — índice tree-sitter→SQLite **local, sin
+  API keys**; una consulta (`codegraph_explore`) devuelve fuente + rutas de llamada + blast radius +
+  **flags de cobertura de tests** (58% menos tool calls en sus benchmarks). Es el **primer** tool de
+  navegación; el proyecto por defecto se fija con `--path` en la config MCP (o se pasa `projectPath` para
+  otro repo — ya indexamos también `monolith` y `frontend`). Fases: **investigar/navegar**.
+- **Serena** ([`ejemplos/serena/`](./ejemplos/serena/)) — navegación **semántica vía LSP**: símbolos, no
+  texto. `find_referencing_symbols` desambigua métodos homónimos por clase — el chequeo **preciso** que el
+  `impact` plano de CodeGraph no da. Complementarios, no rivales. Fases: **investigar → implementar**
+  (pre-rename/borrado).
 - **GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método **hecho tooling**: ciclo *discutir → planificar
   → ejecutar → verificar* con estado en `.planning/` y subagentes (`gsd-planner`, `gsd-plan-checker`,
-  `gsd-executor`, `gsd-verifier`…). El gate de plan y la verificación de objetivo son los de la metodología.
-- **CodeGraph** ([`ejemplos/codegraph/`](./ejemplos/codegraph/)) — índice tree-sitter→SQLite local; una
-  consulta (`codegraph_explore`) devuelve fuente + rutas de llamada + blast radius + **flags de cobertura de
-  tests** (58% menos tool calls en sus benchmarks). Es el **primer** tool de navegación; el proyecto por
-  defecto se fija con `--path` en la config MCP (o se pasa `projectPath` para otro repo — ya indexamos
-  también `monolith` y `frontend`).
-- **Grafo de conocimiento de tickets** (`/kg`, ver [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md)) —
-  **CodeGraph, pero para tickets y lecciones**: un grafo sobre los writeups por ticket + "sharp edges" +
-  memoria. `/kg <ticket|tema>` devuelve, **sin LLM**, los tickets relacionados + la zona de peligro a leer —
-  el primer paso *history-first* antes de `grep`. Se reconstruye con `/kg-refresh`; vive bajo `data/` gitignored.
-- **Serena · Playwright · AWS CLI** — navegación semántica, verificación del contrato, diagnóstico determinista.
-- **Kit portable de metodología** — el método no está atado a este proyecto: hay un *starter-kit* (plantillas
-  de `STATUS`/`SHARP_EDGES`/handover/QA + un script de bootstrap) para llevar estos guardrails a **otro repo**
-  o a **GitHub Copilot**. La disciplina viaja; las tools concretas (Serena, CodeGraph, `/kg`) se sustituyen.
+  `gsd-executor`, `gsd-verifier`…). El gate de plan y la verificación de objetivo son los de la metodología —
+  automatiza las fases **plan (5) → implementar (6) → verificar (7)**. Y es el ejemplo vivo de la Parte 1:
+  subagentes custom + skills distribuidos como plugin.
+- **Playwright** — reproduce el síntoma donde lo ve el consumidor (fases **triaje y gate outbound**).
+- **Context7** — docs de librerías al día, en vez del corte de entrenamiento (fase **investigar**).
+- **Oráculos deterministas propios** (`_diag_*.py`) — la respuesta barata y reproducible antes de gastar
+  la tirada del LLM (fase **investigar**).
 
-### Los mismos principios en ops: sincronizar máquinas (ver [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md))
-Un runbook real que usamos para mover el workspace entre la máquina principal y el portátil. Demuestra que
-la metodología no es solo para código:
+🗣️ *"La inversión clásica — tirar del modelo para diagnosticar — es justo lo que este orden evita: el modelo verifica; los oráculos diagnostican."*
+
+---
+
+## 10. El grafo de conocimiento de tickets
+
+**Hilo:** Si CodeGraph indexa el *código*, este grafo indexa la **memoria del proyecto** — writeups por
+ticket, "sharp edges", runbooks, notas — y responde *"¿qué se rompió antes cerca de aquí?"* en una
+llamada, **sin LLM**. Detalle completo: [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.md).
+
+### Cómo se construye (`/kg-refresh`)
+- **Corpus curado, no un glob:** un `manifest.txt` **diffeable** enumera qué entra (writeups `sst-*`,
+  hubs como `STATUS.md`/`SHARP_EDGES.md`, runbooks, memoria). Exclusiones duras: binarios, copias stale,
+  handovers que repiten el ticket — *densidad sin conocimiento nuevo = ruido*.
+- **Pipeline determinista con un paso semántico dentro:** `prepare` (manifest → stage) → `/graphify`
+  (extracción con ~5 subagentes en paralelo → clustering) → `finalize` (copiar artefactos + leak-check).
+- **El gotcha que lo sostiene:** `graphify` respeta `.gitignore` y todo `data/` lo está → el corpus se
+  monta en un **scratch fuera del repo** y los artefactos se copian de vuelta.
+- Salida: `graph.json` (aristas **tipadas** con `relation` + `confidence`), `graph.html` (interactivo),
+  `GRAPH_REPORT.md` (god-nodes, conexiones sorprendentes).
+
+### Cómo se usa (`/kg`) — determinista, sin LLM en la consulta
+```bash
+/kg <ticket|tema>     # vecinos de un nodo   (graphify explain)  ← el uso más común
+/kg <A> <B>           # camino más corto A<->B (graphify path)
+/kg find <substr>     # descubrir el nombre exacto de un nodo
+```
+Matching difuso: `SST-1234`, `get_letter_end`, `"fin de carta"` resuelven. Ejemplo real: para un fix de
+fin-de-carta, `/kg get_letter_end` devuelve al instante la zona de peligro completa — los 5-6 tickets que
+comparten ese código.
+
+### Dónde se engancha en la metodología
+En la **etapa 1 (Orientar)**: la regla *history-first* del `CLAUDE.md` dice **corre `/kg <ticket|tema>`
+antes de hacer grep** en `data/changes/`. Una llamada devuelve la lista de lectura (tickets relacionados +
+zona de peligro); el grafo apunta a *qué leer*, no lo sustituye. Honestidad: la ganancia real es **recall
+en zonas densas**; aristas `EXTRACTED` = fiables, `INFERRED` = pistas a verificar. Todo vive bajo `data/`
+gitignored (nombres internos → interno); es un **artefacto derivado**: nunca viaja entre máquinas, se
+reconstruye donde esté el corpus (sección 12).
+
+🗣️ *"El grafo es el mapa; el agente, el guía. Recall de zonas de peligro que si no tendrías que recordar."*
+
+---
+
+## 11. Transferir la metodología
+
+**Hilo:** La prueba de que la Parte 2 es **agnóstica**: el método está empaquetado como un *starter-kit*
+y transferido de verdad a **GitHub Copilot** en otro repo. Material real:
+[`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) (guía de adaptación, plantillas,
+bootstrap).
+
+### Qué viaja sin cambios (las 5 reglas que hay que conservar)
+1. Plan → acuerdo → implementar.
+2. Verificar en el **contrato visible por el consumidor**, no en funciones internas.
+3. Resolver la **clase general** del problema, no un input de muestra.
+4. Rastro durable de decisiones (porqué, qué cambió, cómo se verificó).
+5. El humano posee las acciones externas irreversibles (merge, deploy, comunicación).
+
+### Qué se re-mapea por repo
+El **contrato** (payload HTTP / fila de DB / evento / artefacto), el **tracker** (Jira/Azure
+Boards/Issues), la **pirámide de tests**, el **runtime** desplegado (container/VM/serverless), y las
+reglas de **sanitización** locales.
+
+### Qué se sustituye (las tools son fungibles; la disciplina no)
+Serena/CodeGraph/`/kg` son *implementaciones*. Sin grafo de tickets hay un **fallback determinista
+documentado**: `STATUS.md` newest-first + carpetas por ticket + búsqueda léxica por síntoma + historia de
+commits como sustituto ligero del grafo + una sección de "danger zones". El 80% del valor con setup mínimo.
+
+### El kit (ver [`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md))
+Plantillas de `STATUS`/`SHARP_EDGES`/`HANDOVER`/`QA_ACCEPTANCE`/working-agreement + un script
+`bootstrap-new-repo.ps1` que crea la estructura en el repo destino. El modelo operativo con Copilot es el
+mismo flujo con gates: cargar orientación → triaje en el contrato → probes deterministas → plan gate →
+TDD gate → outbound gate → handover. Checklist de primer día: rellenar `STATUS.md`, 3-5 invariantes
+iniciales, definir el contrato, comandos de test scoped, y **un issue completo con RED → GREEN + contrato**.
+
+🗣️ *"Si solo conservas cinco reglas, conserva esas cinco. Las tools se sustituyen; la disciplina viaja."*
+
+---
+
+## 12. Sincronización de máquinas
+
+**Hilo:** Los mismos principios de la metodología aplicados a **ops**: mover el workspace entre la máquina
+principal y el portátil con un runbook real (ver
+[`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md)). Demuestra que la metodología no
+es solo para código:
+
 - **Sincronización asimétrica:** outbound = **copia completa** (un tarball: workspace + `~/.claude`/`.aws`/
   `.ssh`, con `-h` para dereferenciar symlinks, excluyendo venvs/node_modules); inbound = **solo delta**
   (el código ya está en GitHub → `git fetch`; solo los docs gitignored de `data/`, unos MB, viajan).
@@ -317,16 +533,24 @@ la metodología no es solo para código:
   `snapshot-memory` la parquea bajo `data/` para que viaje y `restore-memory` la fusiona de vuelta (con backup)
   antes de `/kg-refresh`. Un `LAPTOP_START_HERE.md` es el punto de entrada único para el agente del portátil.
 
-🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
+🗣️ *"La metodología no es solo para código: memoria durable, guardrails y 'el humano hace lo externo' también en ops."*
 
 ---
 
-## 7. Cierre
+## 13. Cierre
 
-- Instalar es trivial; el valor está en **cómo** lo usas: contexto lean, permisos guardados, método.
-- Las 5 capas: **instalar → memoria/sesiones → MCP → skills/plugins → automatización.**
-- El salto de nivel: de "chatear con un asistente" a **un sistema** con hooks que garantizan calidad,
-  MCP que conecta tu mundo, y una metodología que trata al agente como colaborador con gates de evidencia.
+**Parte 1 — la herramienta:** instalar es trivial; el valor está en **cómo** lo usas. Las capas:
+**instalar → memoria/sesiones → contexto & caching → MCP → skills/plugins → subagents/teams →
+automatización.** El context window es el presupuesto; hooks y permisos son las garantías.
+
+**Parte 2 — el método:** un agente potente sin método es caos rápido. El flujo de 11 etapas canaliza la
+potencia por **gates deterministas**; las tools (CodeGraph, Serena, GSD, `/kg`) encarnan la prevalencia
+barato→caro; y la disciplina **viaja** — a otro repo, a otro agente, incluso a ops.
+
+**El salto de nivel:** de "chatear con un asistente" a **un sistema**: hooks que garantizan calidad, MCP
+que conecta tu mundo, subagentes que escalan el trabajo, y una metodología que trata al agente como
+colaborador con gates de evidencia.
 
 **Referencias:** documentación oficial <https://code.claude.com/docs> · GSD
-<https://github.com/tomascortereal/claude-code-setup> · CodeGraph <https://colbymchenry.github.io/codegraph/>.
+<https://github.com/tomascortereal/claude-code-setup> · CodeGraph <https://colbymchenry.github.io/codegraph/> ·
+Serena <https://github.com/oraios/serena>.
