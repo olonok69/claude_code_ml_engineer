@@ -345,7 +345,7 @@ Cinco hooks de ejemplo, todos reales:
 **Hilo:** Herramientas sin método = caos rápido. Esta es la parte más valiosa del curso: **cómo se
 trabaja de verdad con un agente de coding en un proyecto en producción.** No es un flujo perfecto — es el
 que usamos, sujeto a revisión constante. Y es **agnóstico**: se demuestra con Claude Code, pero la
-disciplina viaja (sección 11). Todo el material está en
+disciplina viaja (sección 10). Todo el material está en
 [`ejemplos/metodologia/`](./ejemplos/metodologia/) (sanitizado).
 
 ### El principio
@@ -388,7 +388,7 @@ pre-existente, no regresión → Serena+CodeGraph localizan el detector de fin d
 byte-idéntica (prueba no-op) + contrato reproducido en local (vía *wrapper*) y **dentro de la imagen
 desplegada** → documentar → sanitizar → el humano hace el push. Un review-bot detecta un caso de columna a la izquierda → se añade el test y va al `PLAYBOOK`.
 
-🗣️ *"Ninguna etapa dice 'pídele al LLM que lo arregle'. La potencia del modelo se canaliza por gates deterministas; el humano conserva las decisiones."*
+🗣️ *"El agente orquesta y es donde vive la inferencia; lo caro se concentra en plan/código/verify, no en buscar."*
 
 ---
 
@@ -624,8 +624,9 @@ completo vive bajo `data/` gitignored; compartirlo fuera exigiría una pasada de
 automatización.** El context window es el presupuesto; hooks y permisos son las garantías.
 
 **Parte 2 — el método:** un agente potente sin método es caos rápido. El flujo de 11 etapas canaliza la
-potencia por **gates deterministas**; las tools (CodeGraph, Serena, GSD) encarnan la prevalencia
-barato→caro; y la disciplina **viaja** — a otro repo, a otro agente, incluso a ops.
+potencia por **gates deterministas**; las tools (CodeGraph, Serena, los oráculos) encarnan la prevalencia
+barato→caro — con GSD como la versión **productizada** del método —; y la disciplina **viaja** — a otro
+repo, a otro agente, incluso a ops.
 
 **Parte 3 — el grafo de tickets:** el caso completo que une las dos partes — skills y subagentes de
 Claude Code (Parte 1) al servicio del paso *history-first* de la metodología (Parte 2), construido con

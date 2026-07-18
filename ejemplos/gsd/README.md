@@ -51,5 +51,11 @@ GSD encarna los gates que en [`../metodologia/WORKFLOW.md`](../metodologia/WORKF
 objetivo con evidencia** (`gsd-verifier`), **rastro durable** (`.planning/` versionado). La diferencia:
 GSD lo automatiza y paraleliza con subagentes.
 
+> **¿Se usa en el proyecto de la Parte 2? No.** GSD está instalado y encarna la misma disciplina, pero ese
+> proyecto corre el flujo de 11 etapas + `data/changes/`, **más depurado y afinado** a fixes por ticket
+> sobre un servicio en producción. GSD tiene más sentido en un **greenfield multi-componente** (diseñar una
+> aplicación entera: roadmap → fases). Aquí se muestra como el método **productizado** — y como ejemplo
+> vivo de la Parte 1: subagentes custom + skills, distribuidos como plugin.
+
 > Instala **muchas** skills `gsd-*`. Empieza por `/gsd-help` y `/gsd-progress`. Configurable con
 > `/gsd-settings` (toggles de workflow, perfil de modelo por agente).

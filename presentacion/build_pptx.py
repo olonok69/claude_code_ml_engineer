@@ -554,8 +554,8 @@ def build():
         text(s, 8.6, y + 0.05, 3.7, 0.42, [[R(b, 11, MUTED, False)]], align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
     text(s, 0.7, 5.68, 11.95, 0.5,
          [[R("Puente a la Parte 2: ", 11.5, GREEN, True),
-           R("GSD es esto en producción — gsd-planner, gsd-executor, gsd-verifier son subagentes custom "
-             "distribuidos como plugin.", 11.5, MUTED, False)]])
+           R("GSD empaqueta exactamente esto — gsd-planner, gsd-executor, gsd-verifier son subagentes custom "
+             "como plugin (este proyecto usa el flujo data/changes/, no GSD — ver Parte 2).", 11.5, MUTED, False)]])
     takeaway(s, "Subagente para que el ruido muera fuera; team para que varios Claudes debatan. El coste no es el mismo.")
 
     # ---- 18. Hooks
@@ -618,7 +618,7 @@ def build():
     text(s, 0.72, 5.62, 11.9, 0.5,
          [[R("Agnóstica:  ", 11.5, CORAL, True),
            R("no es un flujo de Claude Code — es una forma de trabajar con CUALQUIER agente. "
-             "La sección 11 lo demuestra transfiriéndola a GitHub Copilot.", 11, MUTED, False)]],
+             "La sección 10 lo demuestra transfiriéndola a GitHub Copilot.", 11, MUTED, False)]],
          line_spacing=1.03)
     takeaway(s, "El modelo no gana confianza gratis: la gana decisión a decisión, con evidencia.")
 
@@ -745,7 +745,7 @@ def build():
            R("este proyecto corre el flujo de 11 etapas + data/changes/, más depurado para fixes por ticket. "
              "GSD encaja en un greenfield multi-componente (roadmap → fases). Aquí ilustra la Parte 1: "
              "subagentes custom + skills como plugin.", 11.5, MUTED, False)]], line_spacing=1.05)
-    takeaway(s, "Mismo método, productizado: GSD brilla en greenfield multi-fase; este proyecto usa el flujo data/changes/, más afinado a fixes por ticket.")
+    takeaway(s, "Mismo método, productizado: GSD para greenfield multi-fase; aquí, data/changes/ afinado a fixes por ticket.")
 
     # ---- 27. CodeGraph
     s, pg = new()
@@ -961,7 +961,7 @@ def build():
     text(s, 6.8, 1.95, 5.85, 0.4, [[R("PARTE 2 + 3 · el método y el grafo", 13, BLUE, True)]])
     cards2 = [
         ("5", "El flujo de 11 etapas", "Gates deterministas; el humano posee las decisiones."),
-        ("6", "Las tools del método", "CodeGraph · Serena · GSD: barato→caro, determinista→LLM."),
+        ("6", "Las tools del método", "CodeGraph · Serena · oráculos: barato→caro; GSD = el método productizado."),
         ("7", "Transferible y hasta en ops", "Starter-kit probado en Copilot; machine-sync con guardrails."),
         ("8", "El grafo de tickets (graphify)", "507 nodos · 35 comunidades: history-first sin LLM."),
     ]
