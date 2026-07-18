@@ -57,7 +57,7 @@ tokens fijos (context) y un prefijo que nunca cambia (cache).
 - Máx. 4 breakpoints explícitos + 1 automático; el lookup mira los últimos 20 bloques.
 - Diagnóstico en la respuesta de la API: `usage.cache_read_input_tokens`,
   `usage.cache_creation_input_tokens` (y desglose por TTL en `cache_creation`).
-- El refresh dentro del TTL es gratis: cada lectura renueva la ventana.
+- El refresh dentro del TTL no cuesta un write nuevo: cada lectura (0.1×) renueva la ventana.
 - En el Agent SDK aplican las mismas reglas que en la API — si construyes tooling propio
   (ver [`../automation/sdk.ts`](../automation/sdk.ts)), pon lo estable primero.
 

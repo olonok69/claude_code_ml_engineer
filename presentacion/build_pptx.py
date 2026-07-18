@@ -653,7 +653,7 @@ def build():
     text(s, 0.7, 6.02, 11.95, 0.3,
          [[R("■ ", 11, CORAL, True), R("Los recuadros coral son GATES (puntos de decisión). "
            "Un gate rojo = STOP: no escribir código.", 11, MUTED, False)]])
-    takeaway(s, "Ninguna etapa dice 'pídele al LLM que lo arregle': la potencia se canaliza por gates.")
+    takeaway(s, "El agente orquesta y es donde vive la inferencia; lo caro se concentra en plan/código/verify, no en buscar.")
 
     # ---- 23. Ejemplo real
     s, pg = new()
@@ -688,10 +688,10 @@ def build():
              "para el chequeo preciso antes de renombrar. ", 12, TEXT, True),
            R("Orden: barato → caro, determinista → probabilístico.", 12, MUTED, False)]])
     rows = [
-        ("Orientar", "/kg (grafo de tickets → zona de peligro) · STATUS.md · git · gh", "coste 0"),
+        ("Orientar", "/kg (grafo de tickets → zona de peligro) · STATUS.md · git · gh", "sin inferencia"),
         ("Navegar (survey)", "CodeGraph codegraph_explore — fuente + rutas + blast radius + cobertura", "1 llamada"),
         ("Refactor-check", "Serena find_referencing_symbols — desambigua por clase (antes de renombrar)", "preciso"),
-        ("Diagnosticar", "Oráculo determinista: parser / validador / _diag_*.py", "coste 0"),
+        ("Diagnosticar", "Oráculo determinista: parser / validador / _diag_*.py", "sin inferencia"),
         ("Entorno (logs, config)", "AWS CLI — CloudWatch · lambda get-function · SQS/DLQ", "read-only"),
         ("Contrato de salida", "Playwright / F12 sobre el endpoint que ve el consumidor", "reproducir"),
         ("Solo al final", "La tirada del LLM — para VERIFICAR el fix, no para diagnosticar", "metered"),
@@ -714,7 +714,7 @@ def build():
     cards(s, [
         ("CG", "CodeGraph → investigar", "Grafo del CÓDIGO (tree-sitter→SQLite, local). Survey en 1 llamada: fuente + callers + blast radius + cobertura."),
         ("Se", "Serena → pre-refactor", "Navegación semántica vía LSP. find_referencing_symbols desambigua por clase: el chequeo preciso antes de renombrar."),
-        ("G", "GSD → plan/ejecutar/verificar", "El método hecho tooling: subagentes gsd-* + estado en .planning/. Automatiza los gates 5-7."),
+        ("G", "GSD → plan/ejecutar/verificar", "El método productizado (subagentes gsd-* + .planning/). Para greenfield multi-fase; este proyecto usa data/changes/, no GSD."),
         ("/kg", "Grafo de tickets → orientar", "Grafo de la MEMORIA del proyecto (con graphify): tickets + sharp edges. History-first sin LLM (Parte 3)."),
         ("Pw", "Playwright → triaje y outbound", "Reproduce el síntoma donde lo ve el consumidor: el endpoint real, no una función interna."),
         ("Or", "Oráculos → diagnosticar", "Parsers/validadores/_diag_*.py propios: respuesta barata y reproducible antes de gastar la tirada del LLM."),
@@ -740,11 +740,12 @@ def build():
                    "gsd-executor — commits atómicos, checkpoints",
                    "gsd-code-reviewer — REVIEW.md por severidad",
                    "gsd-verifier — verifica el OBJETIVO, no solo tareas"], accent=CORAL)
-    text(s, 0.7, 5.55, 11.95, 0.5,
-         [[R("Es la Parte 1 aplicada: ", 11.5, GREEN, True),
-           R("subagentes custom (sección 06) + skills, distribuidos como plugin (sección 05).",
-             11.5, MUTED, False)]])
-    takeaway(s, "GSD automatiza los gates que la metodología aplica a mano: plan, verificación, rastro durable.")
+    text(s, 0.7, 5.5, 11.95, 0.72,
+         [[R("¿Lo usamos aquí? No: ", 11.5, GREEN, True),
+           R("este proyecto corre el flujo de 11 etapas + data/changes/, más depurado para fixes por ticket. "
+             "GSD encaja en un greenfield multi-componente (roadmap → fases). Aquí ilustra la Parte 1: "
+             "subagentes custom + skills como plugin.", 11.5, MUTED, False)]], line_spacing=1.05)
+    takeaway(s, "Mismo método, productizado: GSD brilla en greenfield multi-fase; este proyecto usa el flujo data/changes/, más afinado a fixes por ticket.")
 
     # ---- 27. CodeGraph
     s, pg = new()

@@ -52,7 +52,7 @@ Los extractores tienen ~5.000 líneas. **No** se abren enteros:
 Ahora el **oráculo determinista**: un pequeño `_diag_pdf.py` que corre solo el parser de layout (sin LLM)
 sobre el documento e imprime los bloques de texto y sus coordenadas. Revela la causa raíz: la provisión
 desborda a una segunda columna y el detector de "fin" corta antes de tiempo. **Misma respuesta cada vez,
-coste 0, y ni una llamada al LLM todavía.**
+coste bajo y determinista (sin inferencia), y ni una llamada al LLM todavía.**
 
 ### 5 · Plan — proponer, no proceder
 

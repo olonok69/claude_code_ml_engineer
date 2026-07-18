@@ -293,8 +293,9 @@ Reglas prácticas: 3–5 teammates; **particionar ficheros** (cada teammate due�
 completo en el prompt de arranque. Limitaciones hoy: sin `/resume` in-process, un team por sesión, sin
 teams anidados.
 
-**Puente a la Parte 2:** GSD (sección 9) es exactamente esto en producción — `gsd-planner`,
-`gsd-executor`, `gsd-verifier` son subagentes custom distribuidos como plugin.
+**Puente a la Parte 2:** GSD (sección 9) empaqueta exactamente esto — `gsd-planner`, `gsd-executor`,
+`gsd-verifier` son subagentes custom distribuidos como plugin (para proyectos multi-fase; **este proyecto
+usa el flujo `data/changes/`, no GSD** — ver la aclaración en la sección 9).
 
 🗣️ *"Subagente para que el ruido muera fuera de tu sesión; team para que varios Claudes debatan. El coste no es el mismo."*
 
@@ -372,6 +373,12 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 10. **Handoff** — el humano (o un tool suyo, p. ej. Cursor) hace push/PR/deploy. El agente **nunca**.
 11. **Revisión automática + persistir** — triar hallazgos del bot como los de un humano; codificar lecciones.
 
+> **¿Dónde está el coste? El agente es el orquestador — y es donde vive la inferencia.** Ninguna etapa es
+> "gratis": las **herramientas** (`/kg`, `git`, parsers, `pytest`, `grep`) dan **hechos sin inferencia**, pero
+> el agente **lee** esos hechos, **razona** y **decide** — y eso cuesta. El método no elimina el coste, lo
+> **concentra**: barato en 1–3 y 9 (leer hechos + decidir), **caro en 5–6–7** (plan, código, verify), donde el
+> modelo *piensa y crea*. Tabla coste-por-etapa: [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md).
+
 ### Un ejemplo real (ver [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
 Bug: *"un campo sale vacío en la UI pero está en el PDF."* → Orientar (STATUS.md encuentra un
 `SHARP_EDGES` que restringe el fix) → confirmar el vacío en el JSON del contrato (Playwright) →
@@ -401,14 +408,19 @@ chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
 
 | Etapa del flujo | Herramienta |
 |---|---|
-| Orientar (1) | `/kg` (grafo de tickets — **graphify**, Parte 3) · `STATUS.md`/ledgers · `git` · `gh` (coste 0) |
+| Orientar (1) | `/kg` (grafo de tickets — **graphify**, Parte 3) · `STATUS.md`/ledgers · `git` · `gh` (sin inferencia) |
 | Navegar / investigar (4) | **CodeGraph** `codegraph_explore` — fuente + rutas + blast radius + cobertura, en 1 llamada |
 | Refactor-check preciso (4-6) | **Serena** `find_referencing_symbols` — desambigua por clase; **obligatorio** antes de renombrar/borrar |
-| Diagnosticar (4) | **Oráculo determinista** (parser, validador, `_diag_*.py`) — coste 0, reproducible |
+| Diagnosticar (4) | **Oráculo determinista** (parser, validador, `_diag_*.py`) — sin inferencia, reproducible |
 | Entorno: logs, config (4) | **AWS CLI** — herramienta de debugging de primera clase (read-only) |
 | Contrato de salida (2, 7) | **Playwright** / F12 sobre el endpoint que ve el consumidor |
 | Verificar lo desplegado (7) | **Docker** — repro dentro de la imagen del runtime; los tests en verde ≠ lo enviado |
 | Solo al final (7) | La tirada del **LLM** — para *verificar* el fix, no para diagnosticar |
+
+> **"Sin inferencia" ≠ "gratis".** Estas etapas no disparan la **tirada del modelo** (el recurso caro y no
+> determinista), pero Claude sí lee su output — un coste **menor y dirigido**, como el de un `grep`, no cero.
+> El razonamiento caro se paga **una vez** al construir el grafo / el oráculo y se **amortiza** en cada uso
+> (el ROI: sin inferencia por consulta, resultados deterministas y reproducibles, ahorro de tiempo y dinero).
 
 ### Qué es cada herramienta (una frase cada una, luego slide propia para las tres grandes)
 
@@ -423,13 +435,18 @@ chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
   (pre-rename/borrado).
 - **GSD** ([`ejemplos/gsd/`](./ejemplos/gsd/)) — el método **hecho tooling**: ciclo *discutir → planificar
   → ejecutar → verificar* con estado en `.planning/` y subagentes (`gsd-planner`, `gsd-plan-checker`,
-  `gsd-executor`, `gsd-verifier`…). El gate de plan y la verificación de objetivo son los de la metodología —
-  automatiza las fases **plan (5) → implementar (6) → verificar (7)**. Y es el ejemplo vivo de la Parte 1:
-  subagentes custom + skills distribuidos como plugin.
+  `gsd-executor`, `gsd-verifier`…), que automatizan las fases **plan (5) → implementar (6) → verificar (7)**.
+  **Honestidad — este proyecto NO usa GSD:** corre el flujo de 11 etapas + `data/changes/`, **más depurado y
+  enfocado** a nuestro trabajo (fixes por ticket sobre un servicio en producción). GSD tiene más sentido en
+  **otro tipo de proyecto** —un *greenfield* multi-componente (diseñar una aplicación entera, roadmap → fases)—;
+  aquí lo mostramos como la misma disciplina **productizada** y como ejemplo vivo de la Parte 1 (subagentes
+  custom + skills como plugin).
 - **Playwright** — reproduce el síntoma donde lo ve el consumidor (fases **triaje y gate outbound**).
 - **Context7** — docs de librerías al día, en vez del corte de entrenamiento (fase **investigar**).
 - **Oráculos deterministas propios** (`_diag_*.py`) — la respuesta barata y reproducible antes de gastar
-  la tirada del LLM (fase **investigar**).
+  la tirada del LLM (fase **investigar**). **No son skills ni tools MCP:** son **código suelto** que el agente
+  teclea y corre con Bash, gitignored bajo `data/changes/<ticket>/` (frente a `/kg`/Serena/CodeGraph, que sí
+  son capacidades registradas). Detalle: [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md).
 
 🗣️ *"La inversión clásica — tirar del modelo para diagnosticar — es justo lo que este orden evita: el modelo verifica; los oráculos diagnostican."*
 
@@ -582,6 +599,13 @@ Matching difuso: `TKT-100`, `get_letter_end`, `"letter-end"` resuelven. **Determ
 consulta**: `kg_query.sh` lee `output/graph.json` directamente. Ejemplo real: para un fix de
 fin-de-carta, `/kg get_letter_end` devuelve al instante la zona de peligro completa — los 5-6 tickets que
 comparten ese código.
+
+> **"Sin LLM en la consulta" no es "gratis" — es coste menor y amortizado.** La inferencia cara (la extracción
+> con subagentes) se paga **una sola vez** en `/kg-refresh`; cada `/kg` es luego un algoritmo determinista
+> sobre `graph.json` → **cero inferencia**. El único coste es que Claude lee un output pequeño (como un `grep`):
+> menor y dirigido, no cero. Así, construir el grafo es una **inversión** que se amortiza: sin inferencia por
+> consulta, resultados **deterministas y reproducibles** (mejor resultado), y ahorro de tiempo y dinero por
+> tarea. 🗣️ *"El grafo no es un gasto: razonar una vez, recuperar mil."*
 
 **Dónde se engancha:** en la **etapa 1 (Orientar)** de la metodología — la regla *history-first* del
 `CLAUDE.md` dice **corre `/kg <ticket|tema>` antes de hacer grep** en `data/changes/`. El grafo apunta a

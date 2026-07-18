@@ -27,6 +27,12 @@
 > Diagrama: [`flow.png`](./flow.png) (renderizado). Fuente editable: [`flow.mmd`](./flow.mmd) (Mermaid) —
 > re-genera el PNG con `python render_flow.py` si cambias el flujo.
 
+> **Antes de las etapas — dónde está el coste y qué hace el agente.** El **agente es el orquestador**, y **es
+> donde vive la inferencia** (el coste caro y no determinista): en cada etapa **elige** qué herramienta llamar,
+> **lee** su salida al contexto y **razona/decide** el siguiente paso. Las **herramientas** (`/kg`, `git`/`gh`,
+> parsers, `pytest`, `grep`) producen **hechos sin inferencia** — mantienen barato el *fact-finding*; el agente
+> gasta su inferencia en **decidir y crear**, no en buscar por fuerza bruta. Por eso el método no elimina el
+> coste: lo **concentra** (etapas 5–6–7). La tabla tras las etapas lo hace explícito una a una.
 
 1. **Orientar — history-first Y status-first.** Antes de tocar nada, el agente lee el registro durable
    (`data/changes/STATUS.md`, ledgers por-ticket) **y** el estado vivo (`git branch -a`, `gh pr list`).
@@ -39,7 +45,7 @@
    está ahí → el bug es aguas abajo → **push back con evidencia, no escribir código.**
 3. **Regresión vs. pre-existente.** Reproducir sobre el estado *previo* al cambio. No asumir la culpa de
    un bug viejo ni descartar una regresión real sin prueba.
-4. **Investigar — barato antes que caro.** Diagnosticar con un **oráculo determinista gratis** (un
+4. **Investigar — barato antes que caro.** Diagnosticar con un **oráculo determinista barato** (sin inferencia; un
    parser, un validador de esquema, un script `_diag_*.py`) que da la misma respuesta siempre. La llamada
    al LLM (metered, probabilística) se reserva **solo para verificar el fix acabado**, no para diagnosticar.
 5. **Plan — proponer, no proceder.** Opciones + trade-offs; acuerdo humano explícito. Las decisiones
@@ -68,6 +74,30 @@
     (confirmar reales, follow-up; descartar falsos *con motivo*). Al cerrar: actualizar registros y
     memoria lean; codificar lecciones reutilizables en el `PLAYBOOK.md`; y cuando aterrizan tickets nuevos,
     reconstruir el grafo con **`/kg-refresh`** para que la orientación de la siguiente tarea (etapa 1) lo vea.
+
+## Coste y rol del agente, etapa a etapa
+
+No hay etapa "gratis", pero el coste **caro** (la inferencia del modelo) no está repartido por igual. La
+regla: *"sin inferencia"* = la herramienta **no dispara la tirada del modelo** (el agente sí lee su salida —
+coste de un `grep`); *"inferencia"* = el agente **razona o escribe**, que es el gasto real.
+
+| # | Etapa | Herramienta determinista (**sin inferencia**) | Rol del agente = **dónde está la inferencia** |
+|---|---|---|---|
+| 1 | Orientar | `/kg` (query al grafo) · `STATUS.md` · `git`/`gh` | lee las 3 señales y **sintetiza** base + qué leer — *ligera* |
+| 2 | Triaje inbound | JSON del contrato (Playwright/F12) | **decide** Lambda vs aguas-abajo — *barata* |
+| 3 | Regresión vs pre-existente | re-ejecutar en la base previa · `git` | **compara** dos salidas y **clasifica** — *barata* |
+| 4 | Investigar | parser / validador / `_diag_*.py` | **escribe** el diag (inferencia) → lee su output → causa — *moderada* |
+| 5 | **Plan** | — (ningún oráculo da la respuesta) | **razona** opciones + trade-offs — **alta, concentrada** |
+| 6 | **Implementar** | `pytest` (RED/GREEN) | **escribe** test + código — **alta** |
+| 7 | **Verificar** | `pytest` · repro por wrapper · Docker · byte-diff | orquesta y **lee** resultados; la **tirada LLM final** (confirmar el contrato) **sí cuesta** |
+| 8 | Documentar | — | **escribe** los writeups — *moderada (escritura)* |
+| 9 | Sanitizar | `grep`/regex sobre el diff staged | corre el escaneo y **revisa** los hits — *barata* |
+| 10 | Handoff | — | deja la rama + **escribe** el handover; push/PR = **humano** — *baja-moderada* |
+| 11 | Revisión bot + persistir | review-bot (externo) · tests · `/kg-refresh` (build, **amortizado**) | **triagea** hallazgos + **codifica** lecciones — *moderada* |
+
+> El gasto caro se concentra en **5–6–7** (plan, código, verify); 1–3 y 9 son lectura de hechos + decisión
+> ligera. Es la regla *barato → caro* en la práctica: la inferencia va donde **aporta** (decidir y crear), no
+> en buscar/diagnosticar por fuerza bruta.
 
 ## Cómo está organizado el trabajo (la memoria de dos niveles)
 
