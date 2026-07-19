@@ -169,7 +169,11 @@ que el ruido no viva en tu sesión; lecturas con puntería en vez de "entiende t
 estricto: `Tools → System → Messages`): escribir cache cuesta 1.25× (2× a 1h de TTL), **leerlo cuesta
 0.1×**. Una sesión de 50 turnos relee el prefijo 50 veces a precio de saldo.
 
-**En Claude Code no configuras nada** — lo aplica solo. Pero tus decisiones determinan si acierta:
+**En Claude Code no configuras nada** — lo aplica solo. El **TTL por defecto depende de la
+autenticación**: **1 h con suscripción** (incluido en el plan) · **5 min con API key**/Bedrock/Vertex; se
+puede cambiar por env var (`ENABLE_PROMPT_CACHING_1H`, `FORCE_PROMPT_CACHING_5M`,
+`DISABLE_PROMPT_CACHING`). Como cada lectura renueva la ventana, con suscripción una pausa de hasta 1 h
+entre turnos sigue acertando cache. Y tus decisiones determinan si acierta:
 - CLAUDE.md pequeño y **estable** → prefijo que nunca cambia → hits.
 - Editar CLAUDE.md/settings a mitad de sesión → invalida el cache desde ahí.
 - Muchos MCP → bloque de tools grande y cambiante → escrituras caras.
