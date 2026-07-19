@@ -18,7 +18,8 @@ Claude Code hace exactamente esto por ti en cada turno de una sesión.
 """
 import os
 import anthropic
-
+from dotenv import load_dotenv
+load_dotenv() 
 client = anthropic.Anthropic()  # usa ANTHROPIC_API_KEY
 
 # --- Prefijo ESTABLE: instrucciones largas (>1024 tokens para ser cacheable). ---

@@ -51,6 +51,29 @@ La moraleja que conecta con [`../context/`](../context/): **contexto lean y esta
 también cuesta menos.** El patrón de dos niveles del CLAUDE.md optimiza los dos ejes a la vez: menos
 tokens fijos (context) y un prefijo que nunca cambia (cache).
 
+### El TTL que usa Claude Code — y cómo cambiarlo
+
+El TTL por defecto **depende de cómo estés autenticado**:
+
+| Autenticación | TTL por defecto | Por qué |
+|---|---|---|
+| **Suscripción Claude** (login normal) | **1 hora** | Incluido en el plan, sin coste extra |
+| **API key** / Bedrock / Vertex / Foundry | **5 minutos** | Minimiza el coste de las escrituras (write 1.25× vs 2× a 1h) |
+
+Se cambia por variable de entorno (en la shell, o en el bloque `env` de `settings.json`):
+
+```bash
+ENABLE_PROMPT_CACHING_1H=1     # optar al TTL de 1h con API key / providers terceros
+FORCE_PROMPT_CACHING_5M=1      # forzar 5 min aunque tengas suscripción
+DISABLE_PROMPT_CACHING=1       # desactivar el caching por completo
+# por modelo: DISABLE_PROMPT_CACHING_SONNET / _OPUS / _HAIKU
+```
+
+El matiz práctico: como cada **lectura** renueva la ventana, con suscripción una sesión interactiva con
+pausas de hasta una hora entre turnos sigue acertando cache; con API key, una pausa de más de 5 minutos
+implica re-escribir el prefijo en el siguiente turno.
+Doc: [code.claude.com/docs/en/prompt-caching](https://code.claude.com/docs/en/prompt-caching).
+
 ## 3. Detalles finos (para la audiencia técnica)
 
 - Mínimo cacheable: ~1.024 tokens en los modelos grandes (4.096 en Haiku); por debajo, no se cachea (sin error).
