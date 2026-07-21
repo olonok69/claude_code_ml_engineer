@@ -215,6 +215,12 @@ día), `playwright` (verificar la UI en un navegador real), `codegraph` (grafo d
 ≠ tool permitida (sigues controlando con el allowlist); y — enlaza con la sección 3 — **cada server suma
 contexto**: desactiva los que el proyecto no use. Config de ejemplo en [`ejemplos/mcp/`](./ejemplos/mcp/).
 
+**La distinción que hay que dejar clara:** los servers **no se instalan en el `CLAUDE.md`** — ese fichero
+es prompt, no configuración. La config (estos tres scopes, o un plugin) da la **capacidad**; el CLAUDE.md
+da el **criterio** — el *trigger map* que hace que el agente tire de la tool correcta sin que se lo pidas
+("Serena antes de leer ficheros enteros"). Instalar convierte "no tengo la tool" en "la tengo"; el
+CLAUDE.md convierte "la tengo" en "se usa en el orden correcto" (es la prevalencia de la Parte 2).
+
 🗣️ *"MCP convierte a Claude de 'sabe de código' a 'sabe de TU sistema': tus docs, tus tickets, tu navegador."*
 
 ---
@@ -224,7 +230,10 @@ contexto**: desactiva los que el proyecto no use. Config de ejemplo en [`ejemplo
 **Hilo:** Cuatro capas de extensibilidad, de simple a potente.
 
 1. **Tools** — lo que Claude puede *hacer*: `Read/Edit/Write/Bash/Grep/Glob/WebFetch/Task` + las `mcp__*`.
-   El acceso se gobierna con el allowlist de permisos.
+   Las built-in van **compiladas en el binario** (no hay carpeta de tools que editar; se envían como
+   schemas en cada request); solo MCP y plugins *añaden* tools. Lo que gestionas es el **acceso**:
+   allowlist de permisos (que también puede vetar una built-in), flags `--allowedTools`/`--disallowedTools`,
+   hooks `PreToolUse` como veto por contenido, y el frontmatter `tools:` de cada subagente.
 2. **Slash commands** — un `.md` en `.claude/commands/` = un `/comando`. El cuerpo es el prompt.
    Ejemplo: [`/audit`](./ejemplos/skills-plugins/.claude/commands/audit.md) (npm audit → fix → tests).
 3. **Skills** — empaquetan un flujo repetible en `.claude/skills/<n>/SKILL.md` con `description`; Claude
@@ -571,6 +580,11 @@ kg_refresh.sh finalize  # copiar artefactos a output/ + leak-check (nada fuera d
   detector in situ encuentra **0 ficheros**. Por eso el corpus se monta en un scratch fuera del repo.
 - **Por eso `/kg-refresh` es un skill y no un script:** el paso semántico (`/graphify`) es un paso de
   Claude; los bookends (`prepare`/`finalize`) son deterministas y testeados.
+- **¿Comando o skill? Skill, aunque se invoque con `/`:** lleva assets (los wrappers), tiene `description`
+  para que Claude la auto-seleccione al orientar, y orquesta un paso del modelo. Las `SKILL.md` viven **a
+  nivel de usuario** (`~/.claude/skills/kg/`, `kg-refresh/`, `graphify/`), fuera del repo — por
+  confidencialidad (nada del KG en rutas committeables) y por alcance (disponible en toda la máquina).
+  Viajan entre máquinas dentro del tarball de `~/.claude` (sección 11).
 - Subcomandos extra para el viaje entre máquinas: `bootstrap` (portátil nuevo), `snapshot-memory` /
   `restore-memory` (la memoria no viaja en el delta — se parquea bajo `data/` y se fusiona de vuelta).
 

@@ -12,6 +12,33 @@ Repo: https://github.com/colbymchenry/codegraph · Docs: https://colbymchenry.gi
 
 Todo vive en `.codegraph/` (una base SQLite local). **Sin servicios externos ni API keys.**
 
+## Cómo funciona, a alto nivel (tres piezas)
+
+1. **Indexar** (`codegraph init`) — recorre el repo y parsea cada fichero con **tree-sitter**, un parser
+   sintáctico que entiende la gramática de cada lenguaje y produce el AST. No ejecuta código ni llama a
+   ningún LLM: análisis puramente sintáctico. De cada AST extrae nodos (símbolos) y aristas (llamadas,
+   imports, herencia, referencias).
+2. **Guardar el grafo** — todo se escribe en la SQLite de `.codegraph/`. De ahí las propiedades: local,
+   determinista (mismo código → mismo grafo) y barato de refrescar (`sync` re-parsea solo lo cambiado).
+3. **Consultar** — `codegraph_explore` no "lee código": **camina el grafo**. Localiza el nodo, sigue las
+   aristas hacia arriba (callers) y hacia abajo (callees), calcula el blast radius transitivamente, cruza
+   con los tests para los flags de cobertura, y devuelve todo eso más la fuente literal en una respuesta.
+
+La analogía: es lo que hace tu IDE por debajo en "Find usages" / "Go to definition" — un índice
+precomputado — pero empaquetado para que un **agente** lo consulte por MCP. Y es el mismo patrón de ROI
+del grafo de tickets (`/kg`): **parsear una vez al indexar, recuperar mil en cada consulta** — CodeGraph
+sin inferencia ni siquiera en el build; graphify con inferencia solo en el build.
+
+## "Blast radius", en palabras sencillas
+
+Es la "onda expansiva" de tocar un símbolo: **todo lo que se puede romper si lo cambias**. CodeGraph
+recorre el grafo de llamadas hacia atrás y responde: *"a esta función la llaman estos 7 sitios; esos
+alimentan a estos otros 3; de todo el conjunto, estos 4 tienen tests y estos 6 no"*. Antes de editar una
+línea ya sabes si tocas una pieza aislada o un pilar del que cuelga medio sistema. Sin el grafo, esa
+pregunta se responde con grep — que encuentra el *texto* pero no sigue el dispatch dinámico ni te dice
+quién llama a quién. Matiz: el blast radius de CodeGraph es *plano* (mezcla métodos homónimos); el
+veredicto fino pre-rename lo da Serena `find_referencing_symbols` (ver tabla más abajo).
+
 ## Qué problema resuelve
 
 El bucle habitual "grep → abrir fichero → seguir el import → volver a grepear" gasta muchísimo contexto.

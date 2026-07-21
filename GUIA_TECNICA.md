@@ -110,6 +110,26 @@ cargan al inicio — también cuenta contra el contexto, ver §5).
 Postura recomendada: reglas concretas (invocaciones exactas), no `Bash(*)`. El humano es dueño de las
 acciones externas (push/PR/deploy) → esas no van en `allow`.
 
+### Dónde "viven" las tools — y las cuatro capas que las gobiernan
+
+Las tools built-in (`Read`, `Edit`, `Bash`, `Grep`, `Glob`, `Task`, `WebFetch`, `WebSearch`…) **van
+compiladas en el binario** y se envían como schemas en cada request (el nivel `Tools` del prefijo de
+caching, §6). No hay carpeta de tools editable: solo se *añaden* tools vía **MCP** (`mcp__<server>__<tool>`)
+o vía plugins. Lo que se gestiona no son las tools sino el **acceso**, en cuatro capas:
+
+1. **Permisos** — el bloque `permissions` de arriba (+ el comando `/permissions` en sesión). Precedencia:
+   política gestionada de empresa → flags de CLI → `settings.local.json` → `settings.json` del proyecto →
+   `~/.claude/settings.json`. Una built-in también se puede *vetar*: `deny: ["WebSearch"]` la desactiva.
+2. **Flags de CLI** — `--allowedTools` / `--disallowedTools` por invocación (típico en headless/CI);
+   en el Agent SDK, `options.allowedTools`.
+3. **Hooks** — un `PreToolUse` con `exit 2` veta por *contenido* del `tool_input` (§10), cosa que el
+   allowlist estático no puede.
+4. **Por agente** — el frontmatter `tools:` de un subagente custom restringe lo que ese agente hereda (§9).
+
+> Las tools MCP usan carga *deferred*: al contexto va un índice ligero (~120 tokens) y el schema completo
+> se carga al usar la tool (§5). Regla-resumen: **las built-in vienen con el binario y las MCP con tus
+> servers; tú no editas tools — editas permisos.**
+
 ---
 
 ## 4. Sesiones
@@ -211,6 +231,16 @@ claude mcp list
     "env": { "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}" } } } }
 ```
 Las tools aparecen como `mcp__<server>__<tool>` y se permiten/deniegan en el allowlist.
+
+> **La config da la capacidad; el CLAUDE.md da el criterio.** Los MCP servers **no** se instalan en el
+> `CLAUDE.md` — ese fichero es solo prompt, no configuración. Se instalan en los scopes de arriba (o los
+> trae un plugin). Pero instalar Serena solo hace que *exista* `mcp__serena__find_symbol`; que el agente
+> **tire de ella sin pedirlo** lo consigue el CLAUDE.md (global o de repo) con un *trigger map*: "Serena
+> ANTES de leer ficheros enteros; `find_referencing_symbols` SIEMPRE antes de un rename". Es la regla de
+> prevalencia de [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md) — la config
+> convierte "no tengo la tool" en "la tengo"; el CLAUDE.md convierte "la tengo" en "se usa en el orden
+> correcto". (Ojo al trade-off de §5: ese trigger map se carga en cada sesión — mantenlo estable y con
+> punteros para que cachee bien.)
 
 ---
 
@@ -536,6 +566,18 @@ Resumen narrativo adicional: [`docs/KNOWLEDGE_GRAPH.md`](./docs/KNOWLEDGE_GRAPH.
 | [`build_manifest.py`](./docs/knowledge-graph/build_manifest.py) / [`stage_corpus.py`](./docs/knowledge-graph/stage_corpus.py) | Enumeran y montan el corpus con nombres provenance-preserving (`sst-5468__sst-5468.md`, `hub__STATUS.md`, `memory__x.md`) |
 | `test_kg_corpus.py` · `test_kg_query.py` · `test_kg_refresh.py` | Los bookends están **testeados** — el pipeline es infraestructura, no un one-off |
 | [`manifest.txt`](./docs/knowledge-graph/manifest.txt) | El corpus explícito y diffeable (~116 ficheros, ~196k palabras) |
+
+**¿`/kg` es un comando o una skill? Skill** — aunque se invoque como `/kg` (las skills también se disparan
+por nombre con `/`, así que la sintaxis no distingue). Lo que lo hace skill: lleva **assets** (los shell
+wrappers), tiene **`description`** para que Claude la auto-seleccione en la etapa de orientar sin que la
+escribas, y `/kg-refresh` **orquesta un paso del propio modelo** (`/graphify`) — un slash command es solo
+un prompt guardado. Las definiciones (`SKILL.md`) viven **a nivel de usuario, fuera del repo**:
+`~/.claude/skills/kg/`, `~/.claude/skills/kg-refresh/` y `~/.claude/skills/graphify/` (graphify también es
+una skill). Ubicación deliberada: (1) **confidencialidad** — nada del KG vive en rutas committeables;
+(2) **alcance** — user-level la hace disponible en cualquier sesión de la máquina, coherente con que el
+grafo indexa también memoria de `~/.claude`. Y como `~/.claude` viaja en el tarball outbound del
+machine-sync (§15), las skills llegan al portátil con la copia completa; el grafo (derivado) se
+reconstruye allí con `bootstrap` + `/kg-refresh`.
 
 ### Construir y consultar
 

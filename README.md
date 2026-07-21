@@ -1,4 +1,7 @@
-# Claude Code — Curso en dos partes (presentación + guías)
+# Claude Code — Curso en tres partes (presentación + guías)
+
+> **English version:** [`README_EN.md`](./README_EN.md) · [`GUIA_PRESENTACION_EN.md`](./GUIA_PRESENTACION_EN.md) ·
+> [`GUIA_TECNICA_EN.md`](./GUIA_TECNICA_EN.md) · `presentacion/Claude_Code_Presentacion_EN.pptx`.
 
 Material para un **curso/workshop** sobre **Claude Code**: una única presentación (`.pptx`) con **tres
 partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables. En español, orientado a
@@ -20,7 +23,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 |---|---|
 | [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente, en dos partes: hilo a contar por slide + frases de cierre 🗣️ + links al código. |
 | [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código), en las mismas dos partes. |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 36 slides, con separadores de parte). |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 39 slides — 36 generadas + portada, diagrama de teams y arquitectura añadidas a mano; versión EN: Claude_Code_Presentacion_EN.pptx). |
 | [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
 | [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
@@ -58,11 +61,26 @@ python ejemplos/subagents/render_agents.py    # -> agents.png (subagentes vs age
 python presentacion/capture_kg_graph.py       # -> kg_graph.png (captura del grafo de tickets; requiere playwright)
 ```
 
+## Documentación de las tecnologías
+
+| Tecnología | Qué es en el curso | Documentación |
+|---|---|---|
+| **Claude Code** | La herramienta (Parte 1) | <https://code.claude.com/docs> · [prompt caching](https://code.claude.com/docs/en/prompt-caching) · [sub-agents](https://code.claude.com/docs/en/sub-agents) · [agent teams](https://code.claude.com/docs/en/agent-teams) · [hooks](https://code.claude.com/docs/en/hooks) |
+| **MCP** | El estándar de conexión (§04) | <https://modelcontextprotocol.io> |
+| **Agent SDK** | Automatización a medida (§07) | <https://platform.claude.com/docs/en/agent-sdk> |
+| **CodeGraph** | Grafo del código (§09) | <https://colbymchenry.github.io/codegraph/> · [repo](https://github.com/colbymchenry/codegraph) |
+| **Serena** | Navegación semántica LSP (§09) | <https://github.com/oraios/serena> |
+| **GSD** | El método productizado (§09) | <https://github.com/tomascortereal/claude-code-setup> |
+| **graphify** | El grafo de tickets (Parte 3) | <https://graphify.net> · [repo](https://github.com/Graphify-Labs/graphify) |
+| **Playwright MCP** | Verificación del contrato (§09) | <https://github.com/microsoft/playwright-mcp> |
+| **Context7** | Docs de librerías al día (§09) | <https://context7.com> |
+| **tree-sitter** | El parser bajo CodeGraph | <https://tree-sitter.github.io/tree-sitter/> |
+
 ## Fuentes
 
 Documentación oficial <https://code.claude.com/docs> · curso de hooks de Anthropic · GSD
 <https://github.com/tomascortereal/claude-code-setup> · CodeGraph <https://colbymchenry.github.io/codegraph/> ·
-Serena <https://github.com/oraios/serena>.
+Serena <https://github.com/oraios/serena> · graphify <https://graphify.net>.
 
 > Los ejemplos derivados de un proyecto profesional real están **sanitizados** (sin nombres de cliente,
 > IDs de ticket ni secretos).
