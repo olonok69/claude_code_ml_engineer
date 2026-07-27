@@ -468,8 +468,8 @@ chequeo **preciso** antes de renombrar/borrar; grep/Read solo para literales."*
 ## 10. Transferir la metodología
 
 **Hilo:** La prueba de que la Parte 2 es **agnóstica**: el método está empaquetado como un *starter-kit*
-y transferido de verdad a **GitHub Copilot** en otro repo. Material real:
-[`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) (guía de adaptación, plantillas,
+y transferido a **Cursor** y a **GitHub Copilot** en otros repos. Material real:
+[`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) (guías de adaptación, plantillas,
 bootstrap).
 
 ### Qué viaja sin cambios (las 5 reglas que hay que conservar)
@@ -490,11 +490,19 @@ documentado**: `STATUS.md` newest-first + carpetas por ticket + búsqueda léxic
 commits como sustituto ligero del grafo + una sección de "danger zones". El 80% del valor con setup mínimo.
 
 ### El kit (ver [`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md))
-Plantillas de `STATUS`/`SHARP_EDGES`/`HANDOVER`/`QA_ACCEPTANCE`/working-agreement + un script
-`bootstrap-new-repo.ps1` que crea la estructura en el repo destino. El modelo operativo con Copilot es el
-mismo flujo con gates: cargar orientación → triaje en el contrato → probes deterministas → plan gate →
-TDD gate → outbound gate → handover. Checklist de primer día: rellenar `STATUS.md`, 3-5 invariantes
-iniciales, definir el contrato, comandos de test scoped, y **un issue completo con RED → GREEN + contrato**.
+Plantillas de `STATUS`/`SHARP_EDGES`/`HANDOVER`/`QA_ACCEPTANCE`/working-agreement + scripts
+`bootstrap-new-repo.ps1` (ledgers) y, para Cursor, `bootstrap-cursor-repo.ps1` (rules/skills/MCP/hooks).
+Hay dos guías de adaptación en el mismo pack:
+
+- **Cursor** — [`CURSOR_ADAPTATION.md`](./docs/ai-agents-code-methodology/CURSOR_ADAPTATION.md) + superficie
+  lista para copiar en [`cursor/`](./docs/ai-agents-code-methodology/cursor/) (CodeGraph, Serena,
+  Playwright, skills `kg` / `sanitise-diff`, hook de handoff).
+- **GitHub Copilot** — [`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md).
+
+El modelo operativo es el mismo flujo con gates: cargar orientación → triaje en el contrato → probes
+deterministas → plan gate → TDD gate → outbound gate → handover. Checklist de primer día: rellenar
+`STATUS.md`, 3-5 invariantes iniciales, definir el contrato, comandos de test scoped, y **un issue
+completo con RED → GREEN + contrato**.
 
 🗣️ *"Si solo conservas cinco reglas, conserva esas cinco. Las tools se sustituyen; la disciplina viaja."*
 

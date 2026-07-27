@@ -475,10 +475,14 @@ in an installation: [`docs/SETUP_CODEGRAPH_GSD.md`](./docs/SETUP_CODEGRAPH_GSD.m
 ## 14. Transferring the methodology
 
 Real material: [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) —
-[`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md) (the adaptation guide),
-[`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md) (packaging and
-bootstrapping), [`templates/`](./docs/ai-agents-code-methodology/templates/) (templates) and
-[`scripts/bootstrap-new-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-new-repo.ps1.txt).
+
+- **Cursor:** [`CURSOR_ADAPTATION.md`](./docs/ai-agents-code-methodology/CURSOR_ADAPTATION.md) +
+  surface [`cursor/`](./docs/ai-agents-code-methodology/cursor/) (rules, skills, MCP, hooks) +
+  [`scripts/bootstrap-cursor-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-cursor-repo.ps1.txt)
+- **Copilot:** [`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md)
+- Shared: [`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md),
+  [`templates/`](./docs/ai-agents-code-methodology/templates/),
+  [`scripts/bootstrap-new-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-new-repo.ps1.txt)
 
 **What travels unchanged:** plan→agreement→implement · verify against the consumer's contract · solve
 the general class · durable trail · the human owns everything external.
@@ -492,6 +496,10 @@ Expand-Archive ai-agent-methodology-package.zip -DestinationPath data/changes
 Rename-Item …/scripts/bootstrap-new-repo.ps1.txt bootstrap-new-repo.ps1
 pwsh data/changes/ai-agent-methodology/scripts/bootstrap-new-repo.ps1
 # creates: STATUS.md · FOLLOWUPS.md · SHARP_EDGES.md · handover and QA templates
+
+# Cursor (optional): rules + skills + MCP + hooks
+Rename-Item …/scripts/bootstrap-cursor-repo.ps1.txt bootstrap-cursor-repo.ps1
+pwsh data/changes/ai-agent-methodology/scripts/bootstrap-cursor-repo.ps1
 ```
 (The script travels as `.ps1.txt` to dodge email active-content blocking.)
 

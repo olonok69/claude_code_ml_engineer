@@ -24,7 +24,7 @@
 
 12. [El flujo y el ejemplo real](#12-metodología)
 13. [Las herramientas: CodeGraph, Serena, GSD](#13-herramientas-del-método)
-14. [Transferir la metodología (starter-kit / Copilot)](#14-transferir-la-metodología)
+14. [Transferir la metodología (starter-kit / Cursor / Copilot)](#14-transferir-la-metodología)
 15. [Sincronización de máquinas](#15-sincronización-de-máquinas)
 
 **Parte 3 — El grafo de conocimiento de tickets (graphify)**
@@ -473,10 +473,14 @@ en una instalación: [`docs/SETUP_CODEGRAPH_GSD.md`](./docs/SETUP_CODEGRAPH_GSD.
 ## 14. Transferir la metodología
 
 Material real: [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) —
-[`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md) (la guía de adaptación),
-[`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md) (empaquetar y
-arrancar), [`templates/`](./docs/ai-agents-code-methodology/templates/) (plantillas) y
-[`scripts/bootstrap-new-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-new-repo.ps1.txt).
+
+- **Cursor:** [`CURSOR_ADAPTATION.md`](./docs/ai-agents-code-methodology/CURSOR_ADAPTATION.md) +
+  superficie [`cursor/`](./docs/ai-agents-code-methodology/cursor/) (rules, skills, MCP, hooks) +
+  [`scripts/bootstrap-cursor-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-cursor-repo.ps1.txt)
+- **Copilot:** [`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md)
+- Compartido: [`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md),
+  [`templates/`](./docs/ai-agents-code-methodology/templates/),
+  [`scripts/bootstrap-new-repo.ps1.txt`](./docs/ai-agents-code-methodology/scripts/bootstrap-new-repo.ps1.txt)
 
 **Qué viaja sin cambios:** plan→acuerdo→implementar · verificar en el contrato del consumidor · resolver
 la clase general · rastro durable · el humano posee lo externo.
@@ -490,6 +494,10 @@ Expand-Archive ai-agent-methodology-package.zip -DestinationPath data/changes
 Rename-Item …/scripts/bootstrap-new-repo.ps1.txt bootstrap-new-repo.ps1
 pwsh data/changes/ai-agent-methodology/scripts/bootstrap-new-repo.ps1
 # crea: STATUS.md · FOLLOWUPS.md · SHARP_EDGES.md · plantillas de handover y QA
+
+# Cursor (opcional): rules + skills + MCP + hooks
+Rename-Item …/scripts/bootstrap-cursor-repo.ps1.txt bootstrap-cursor-repo.ps1
+pwsh data/changes/ai-agent-methodology/scripts/bootstrap-cursor-repo.ps1
 ```
 (El script viaja como `.ps1.txt` para esquivar los bloqueos de contenido activo del correo.)
 
