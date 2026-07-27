@@ -9,18 +9,21 @@
    - `data/changes/SHARP_EDGES.md`
 3. Define the product-facing output contract for the repo.
 4. Define branch and PR naming rules.
+5. **If using Cursor:** run `bootstrap-cursor-repo.ps1`, wire `.cursor/mcp.json`, add lean rules under `.cursor/rules/`, fill `AGENTS.md` + Cursor working agreement.
 
 Exit criteria:
 
 1. All baseline docs exist.
 2. Team agrees on contract and naming conventions.
+3. (Cursor) MCP tools load after window reload.
 
 ## Phase 2: Operationalization (Days 2-3)
 
 1. Map test suites by component/subsystem.
 2. Add handover and QA acceptance templates.
 3. Define minimum evidence required to claim "fixed".
-4. Add sanitization checks for names/IDs/secrets.
+4. Add sanitization checks for names/IDs/secrets (Cursor: `sanitise-diff` skill; optional shell hook for push/deploy).
+5. (Cursor) Confirm Plan-mode gate on the first non-trivial change.
 
 Exit criteria:
 

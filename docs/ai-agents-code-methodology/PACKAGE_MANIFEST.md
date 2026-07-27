@@ -6,10 +6,11 @@ This file lists all artifacts included in the portable methodology package.
 
 1. `README.md`
 2. `TECHNICAL.md`
-3. `COPILOT_ADAPTATION.md`
-4. `START_HERE.md`
-5. `TRANSFER_AND_BOOTSTRAP.md`
-6. `NEW_REPO_CONFIGURATION_PLAN.md`
+3. `CURSOR_ADAPTATION.md`
+4. `COPILOT_ADAPTATION.md`
+5. `START_HERE.md`
+6. `TRANSFER_AND_BOOTSTRAP.md`
+7. `NEW_REPO_CONFIGURATION_PLAN.md`
 
 ## Visual flow
 
@@ -27,14 +28,33 @@ This file lists all artifacts included in the portable methodology package.
 6. `templates/HANDOVER_TEMPLATE.md`
 7. `templates/QA_ACCEPTANCE_TEMPLATE.md`
 8. `templates/COPILOT_WORKING_AGREEMENT_TEMPLATE.md`
+9. `templates/CURSOR_WORKING_AGREEMENT_TEMPLATE.md`
+
+## Cursor surface pack (`cursor/`)
+
+1. `cursor/README.md`
+2. `cursor/mcp.json.example`
+3. `cursor/AGENTS.md.example`
+4. `cursor/rules/00-methodology-core.mdc`
+5. `cursor/rules/01-tool-prevalence.mdc`
+6. `cursor/rules/02-gates-and-handoff.mdc`
+7. `cursor/skills/kg/SKILL.md`
+8. `cursor/skills/kg-refresh/SKILL.md`
+9. `cursor/skills/methodology-plan/SKILL.md`
+10. `cursor/skills/sanitise-diff/SKILL.md`
+11. `cursor/hooks.json.example`
+12. `cursor/hooks/block-external-git.ps1`
 
 ## Scripts
 
-1. `scripts/bootstrap-new-repo.ps1.txt`
+1. `scripts/bootstrap-new-repo.ps1.txt` — ledgers + shared templates
+2. `scripts/bootstrap-cursor-repo.ps1.txt` — `.cursor/` rules, skills, MCP, hooks
 
 ## Intended use
 
 1. Copy package to target repo under `data/changes/ai-agent-methodology`.
 2. Rename `scripts/bootstrap-new-repo.ps1.txt` to `scripts/bootstrap-new-repo.ps1`.
 3. Run `scripts/bootstrap-new-repo.ps1` from target repo root.
-4. Fill generated templates and start first issue using the planning template.
+4. For Cursor: rename and run `scripts/bootstrap-cursor-repo.ps1.txt` → `.ps1`.
+5. Fill generated templates and start first issue using the planning template
+   in `CURSOR_ADAPTATION.md` or `COPILOT_ADAPTATION.md`.

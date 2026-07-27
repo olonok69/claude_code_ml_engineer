@@ -36,13 +36,16 @@ repos).
 
 ## Companion guides
 
-- `COPILOT_ADAPTATION.md` - how to apply this methodology in a completely
-   different repository using GitHub Copilot agent workflows, including a
-   no-knowledge-graph fallback and technology-agnostic planning templates.
+- `CURSOR_ADAPTATION.md` - how to run this methodology in **Cursor** with the
+   same tool roles (CodeGraph, Serena, Playwright, graphify/`kg`), plus the
+   copy-ready surface under `cursor/` (rules, skills, MCP, hooks).
+- `COPILOT_ADAPTATION.md` - how to apply this methodology using GitHub Copilot
+   agent workflows, including a no-knowledge-graph fallback and
+   technology-agnostic planning templates.
 - `START_HERE.md` - quickest path to use this folder as a transfer-ready
-   package.
+   package (Cursor or Copilot).
 - `TRANSFER_AND_BOOTSTRAP.md` - exact commands to zip, move, unpack, and
-   initialize docs in the target repo.
+   initialize docs (and optional Cursor surface) in the target repo.
 - `NEW_REPO_CONFIGURATION_PLAN.md` - phased rollout plan for the first two
    weeks.
 - `PACKAGE_MANIFEST.md` - inventory of all artifacts included in this pack.
