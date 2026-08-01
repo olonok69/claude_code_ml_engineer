@@ -18,6 +18,7 @@
 > and in [`ejemplos/`](./ejemplos/). The [`docs/`](./docs/) folder is reference material from a real
 > installation where the methodology is applied daily.
 
+
 ---
 
 ## Index
