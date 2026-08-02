@@ -472,9 +472,9 @@ Actual rule (updated): *"for 'what is this / who depends on it / what do I touch
 
 ## 10. Transferring the methodology
 
-**Story:** The proof that Part 2 is **agnostic**: the method is packaged as a *starter-kit* and
-transferred to **Cursor** and **GitHub Copilot** in other repos. Real material:
-[`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) (adaptation guides, templates,
+**Story:** The proof that Part 2 is **agnostic**: the method is packaged as a *starter-kit* and genuinely
+transferred to **GitHub Copilot** in another repo. Real material:
+[`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) (adaptation guide, templates,
 bootstrap).
 
 ### What travels unchanged (the 5 rules to preserve)
@@ -496,19 +496,11 @@ commit history as a lightweight graph substitute + a "danger zones" section. 80%
 minimal setup.
 
 ### The kit (see [`TRANSFER_AND_BOOTSTRAP.md`](./docs/ai-agents-code-methodology/TRANSFER_AND_BOOTSTRAP.md))
-Templates for `STATUS`/`SHARP_EDGES`/`HANDOVER`/`QA_ACCEPTANCE`/working-agreement + scripts
-`bootstrap-new-repo.ps1` (ledgers) and, for Cursor, `bootstrap-cursor-repo.ps1` (rules/skills/MCP/hooks).
-Two adaptation guides live in the same pack:
-
-- **Cursor** — [`CURSOR_ADAPTATION.md`](./docs/ai-agents-code-methodology/CURSOR_ADAPTATION.md) +
-  copy-ready surface in [`cursor/`](./docs/ai-agents-code-methodology/cursor/) (CodeGraph, Serena,
-  Playwright, `kg` / `sanitise-diff` skills, handoff hook).
-- **GitHub Copilot** — [`COPILOT_ADAPTATION.md`](./docs/ai-agents-code-methodology/COPILOT_ADAPTATION.md).
-
-The operating model is the same gated workflow: load orientation → triage on the contract →
-deterministic probes → plan gate → TDD gate → outbound gate → handover. First-day checklist: fill in
-`STATUS.md`, 3-5 initial invariants, define the contract, scoped test commands, and **one complete
-issue with RED → GREEN + contract**.
+Templates for `STATUS`/`SHARP_EDGES`/`HANDOVER`/`QA_ACCEPTANCE`/working-agreement + a
+`bootstrap-new-repo.ps1` script that creates the structure in the target repo. The operating model with
+Copilot is the same gated workflow: load orientation → triage on the contract → deterministic probes →
+plan gate → TDD gate → outbound gate → handover. First-day checklist: fill in `STATUS.md`, 3-5 initial
+invariants, define the contract, scoped test commands, and **one complete issue with RED → GREEN + contract**.
 
 🗣️ *"If you keep only five rules, keep those five. Tools get replaced; the discipline travels."*
 
