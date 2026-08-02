@@ -40,8 +40,6 @@ Ensure-FileFromTemplate -Target (Join-Path $changesDir "_handover_template.md") 
 Ensure-FileFromTemplate -Target (Join-Path $changesDir "_qa_acceptance_template.md") -Template (Join-Path $templatesDir "QA_ACCEPTANCE_TEMPLATE.md")
 Ensure-FileFromTemplate -Target (Join-Path $changesDir "_issue_note_template.md") -Template (Join-Path $templatesDir "ISSUE_NOTE_TEMPLATE.md")
 Ensure-FileFromTemplate -Target (Join-Path $changesDir "_copilot_working_agreement_template.md") -Template (Join-Path $templatesDir "COPILOT_WORKING_AGREEMENT_TEMPLATE.md")
-Ensure-FileFromTemplate -Target (Join-Path $changesDir "_cursor_working_agreement_template.md") -Template (Join-Path $templatesDir "CURSOR_WORKING_AGREEMENT_TEMPLATE.md")
 Ensure-FileFromTemplate -Target (Join-Path $changesDir "_orientation_template.md") -Template (Join-Path $templatesDir "ORIENTATION_TEMPLATE.md")
 
 Write-Host "Bootstrap complete."
-Write-Host "For Cursor rules/skills/MCP, also run: scripts/bootstrap-cursor-repo.ps1"

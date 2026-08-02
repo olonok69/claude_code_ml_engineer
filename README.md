@@ -26,7 +26,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 | [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 39 slides — 36 generadas + portada, diagrama de teams y arquitectura añadidas a mano; versión EN: Claude_Code_Presentacion_EN.pptx). |
 | [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
-| [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Cursor/Copilot, runbooks de sync, setup de CodeGraph+GSD). |
+| [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
 
 ## Ejemplos (por sección del curso)
 
@@ -43,7 +43,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 **Parte 2:**
 - [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), el **runbook de ops** (sincronizar el workspace entre máquinas) y el diagrama del flujo (§08, §11).
 - [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) · [`ejemplos/serena/`](./ejemplos/serena/) — las herramientas del método, en profundidad (§09).
-- [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a **Cursor** (`CURSOR_ADAPTATION.md`, `cursor/`) y a GitHub Copilot (§10).
+- [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§10).
 - [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización entre máquinas (§11).
 
 **Parte 3:**
