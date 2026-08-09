@@ -77,8 +77,20 @@ The `@path/file` syntax inside a CLAUDE.md imports another doc when it loads
 ### Two-tier pattern (see [`ejemplos/claude-md/`](./ejemplos/claude-md/))
 - **Tier 1** = the always-loaded `CLAUDE.md`: orientation + one-line pointers. Small.
 - **Tier 2** = files under `data/changes/` (`STATUS.md`, `PLAYBOOK.md`, `SHARP_EDGES.md`,
-  `CONVENTIONS.md`, `<TICKET>/<TICKET>.md`) that are read on demand.
+  `TEST_MAP.md`, `CONVENTIONS.md`, `TICKETS.md`, `FOLLOWUPS.md`, `<TICKET>/<TICKET>.md`) that are read
+  on demand.
 - **Write-once rule:** each fact lives in a single canonical ledger; the core carries the pointer, not the copy.
+- **Tier 0 (machine-local):** `IDENTITY.md` — which machine this is and what role it holds
+  (`publisher` / `contributor`) in the shared record (§15B). Gitignored, never synced: the one file
+  that must **not** be the same everywhere.
+
+> **The index goes stale too.** Moving content out of the always-loaded file into an on-demand file
+> **does not refresh it** — it inherits the original's staleness while *looking* freshly written. Real
+> case: a 28-entry ticket→test list was moved to `TEST_MAP.md`, and the verification check asserted
+> "the file has 28 entries". It had exactly 28 — and 28 was the wrong number: `tests/` held **80**
+> files and the list had stopped ~40 tickets earlier. The count could not fail, because it was derived
+> from the same stale source it was checking. Verify a moved list **against the thing it describes**
+> (the filesystem, the code), never against its own former self.
 
 ### Auto-memory
 Claude persists learnings (build commands, debugging clues) across sessions automatically. It doesn't
@@ -403,10 +415,43 @@ Diagram: [`metodologia/flow.png`](./ejemplos/metodologia/flow.png) (source `flow
 `render_flow.py`). Concrete case from start to finish:
 [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md).
 
-> **The outbound gate is three checks** (not just "the tests pass"): (1) reproduce at the **real output
-> stage** — the *wrapper* that rebuilds the contract, not an internal `extract()` function; (2) the local JSON
-> matches the contract; (3) verify it **inside the deployed image** (download/build the runtime image,
-> mount the `src`, re-run). Green tests are not proof of what gets deployed.
+> **The outbound gate is FIVE checks** (not just "the tests pass"):
+> **(0) validate the measuring instrument before trusting it** — any `_diag_*`/`_sweep_*` that informs a ship
+> decision is first run against a **known-answer case**, and that result recorded next to the finding; never
+> wrap the measurement in your own `try/except → return False`;
+> (1) reproduce at the **real output stage** — the *wrapper* that rebuilds the contract, not an internal
+> `extract()` function; (2) the local JSON matches the contract, verified **on the member LIST, never on a
+> total**; (3) verify it **inside the deployed image** (download/build the runtime image, mount the `src`,
+> re-run); (4) **look at the output** rendered, by eye, before the PR — for geometry/highlight changes,
+> before/after artifacts are **mandatory**.
+> Green tests are not proof of what gets deployed.
+
+> **Three ways a green gate proves nothing** — all three have bitten us:
+> **Broken instrument.** Bypassing the constructor to probe a predicate cheaply leaves unset every attribute
+> you didn't think to set; if the method reads one and has its own `try/except`, the error is swallowed and
+> comes back as a plausible `False`. The probe then reports a confident, uniform "no" for **every** case.
+> Canary against a known answer, always.
+> **A total that matches.** A count that lands on the expectation is **not** a passing test: one item wrongly
+> added and one wrongly dropped cancel exactly. Assert on **titles/ids**, not on `len(...)`; and where the fix
+> has a known direction, measure a **delta** against a baseline (gained/lost), not two totals. The closer a
+> number falls to the expected one, the **more** suspicious it should be, not less.
+> **A gate that couldn't fail.** If the reference corpus holds no positive example of the shape you just
+> touched, the clean run proves **no-regression and nothing else**. Say so explicitly, and name what carries
+> the correctness evidence instead. (Real case: a detector that fires on **0 of 190** corpus documents —
+> `fires=0` reads identically whether the code is correct or completely broken.)
+
+> **The output contract is a living document.** When a change alters what is emitted, consult the governing
+> rule **before** designing the fix and do exactly one of three things: **comply**, **revise** it as part of
+> the same change, or **record** why it's out of scope. All three are valid; **silence is not**. Revision is
+> normal: a correct fix revealing that an agreed rule was wrong is *how* the contract improves. Two practical
+> notes: cite the rule by **stable identifier** (never by file path — local paths don't resolve for whoever
+> reads it in a ticket), and don't turn it into a CI gate: the decision is **three-valued**, and a binary check
+> would block precisely the correct "revise the rule" outcome.
+
+> **Where does the "expected" number come from?** "The other environment returns X" is evidence **about that
+> environment**, never a specification — and if that environment runs the same code path you're fixing,
+> matching it reproduces the bug. Derive the target from the document's structure and the contract, and say so
+> plainly when the ticket's expectation is wrong (real case: the ticket said 12; the correct answer was 13).
 
 ### Tool-precedence (see [`metodologia/herramientas.md`](./ejemplos/metodologia/herramientas.md))
 The `CLAUDE.md` doesn't just say *what* to do, but **with which tool and in what order** (cheap→expensive,
@@ -506,6 +551,13 @@ output contract · scoped test commands · one complete issue with RED→GREEN +
 
 ## 15. Machine sync
 
+Two mechanisms, and they do **not** compete: **(A)** tarball+USB for a *full machine
+bring-up*, and **(B)** shared object storage (S3) for the *day-to-day engineering record*.
+(B) is the recent change and is what gets used daily; (A) remains the path when a machine
+has to be stood up from scratch.
+
+### A. Full bring-up: tarball + USB (asymmetric)
+
 Real (sanitized) procedure that applies the same principles to an ops task
 (see [`metodologia/machine-sync.md`](./ejemplos/metodologia/machine-sync.md);
 runbooks from the real installation in [`docs/synchro/`](./docs/synchro/)). **Asymmetric:**
@@ -543,6 +595,45 @@ git writes to remote (no push/merge/PR); STOP and ask when in doubt; the AWS CLI
 **not** travel in the bundle (reinstall on the target + `aws sso login`) — same for the CodeGraph CLI and the
 `.codegraph/` index, which `target-setup.sh` restores. The human owns external
 actions; the agent prepares and reports with evidence (file counts, PR statuses).
+
+### B. The shared record: `data/` over S3
+
+The tarball solves **transport**, not **sharing**. Add a third machine and a second person
+and three costs appear: the record is gitignored → it **can't be linked** from a ticket or
+PR; moving degenerates into archiving everything; and every teammate ends up with **their
+own private index** of the same history. Full runbook:
+[`docs/synchro/s3-sync/README.md`](./docs/synchro/s3-sync/README.md).
+
+```bash
+# Dry-run is the DEFAULT: nothing transfers until --go
+./data-pull.sh            # preview  ->  ./data-pull.sh --go
+./data-push.sh            # preview  ->  ./data-push.sh --go
+./mount-data.sh           # live shared view, READ-ONLY (~/s3-<name>-data)
+./validate.sh             # a machine isn't set up until this prints MACHINE READY
+```
+
+| Rule | Why |
+|---|---|
+| Narrow scope: only `changes/**/*.md` + the graph | Confidentiality and size. **No** client documents, fixtures or binaries without the bucket owner's sign-off. |
+| **Write via sync, read via read-only mount** | Object storage has no locking and no atomic rename: a writable mount corrupts, and you find out weeks later. |
+| Dry-run by default; `--delete` is a separate opt-in | An exact mirror from a stale local view **erases** what a teammate just pushed. |
+| Docs = source of truth; the graph is **derived** | Per-task files almost never collide; the generated graph is the only real contention point → rebuild locally (`/kg-refresh`) or have **one publisher**. |
+| Bucket versioning on | The recovery net — turn it on before the first accident, not after. |
+
+**The agent-specific part — the machine has a role.** Once the same record is reachable
+from several machines with different permissions, the session must know **where it is and
+what it may do** *before* acting; otherwise a *contributor* machine will republish the
+shared graph — the one thing it must not do — and report it as work done. Each machine
+declares `MACHINE_NAME`/`MACHINE_ROLE` in its `config.env`, `identity.sh --write` generates
+a **machine-local** `IDENTITY.md` (with live checks: authenticated account, bucket
+reachable, mount present), and `CLAUDE.md` **points at it**, so every session reads its own
+role first. `IDENTITY.md` is the one file that must **not** be the same everywhere:
+gitignored, never synced, never packaged.
+
+> **Before the first shared push:** scrub embedded credentials from the records. This is not
+> hypothetical — investigation notes capture signed URLs and tokens **on purpose**, as
+> evidence of a bug, and those are exactly the strings you don't want in shared storage. Run
+> the sanitisation scan over the **whole** record, not over a diff.
 
 ---
 

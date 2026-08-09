@@ -12,7 +12,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
   automatización.
 - **Parte 2 — La metodología (agnóstica de la herramienta):** el flujo real de 11 etapas con gates ·
   las herramientas del método (CodeGraph, Serena, GSD, oráculos) · la transferencia a otro agente
-  (GitHub Copilot) · la sincronización de máquinas.
+  (GitHub Copilot) · la sincronización de máquinas **y el registro de ingeniería compartido sobre S3**.
 - **Parte 3 — El grafo de conocimiento de tickets:** un caso completo construido con **graphify**:
   corpus con manifest, pipeline `/kg-refresh`, consulta `/kg` sin LLM, la visualización real del grafo
   (507 nodos · 35 comunidades) y su enganche en la metodología.
@@ -41,10 +41,10 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 - [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling (§07).
 
 **Parte 2:**
-- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de tres checks** (contrato vía *wrapper* + verificación en la **imagen desplegada**), el **runbook de ops** (sincronizar el workspace entre máquinas) y el diagrama del flujo (§08, §11).
+- [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de cinco checks** (validar el instrumento de medida · contrato vía *wrapper* · lista de miembros, no totales · verificación en la **imagen desplegada** · mirar la salida), el **runbook de ops** (sincronizar el workspace entre máquinas, y su evolución a registro compartido) y el diagrama del flujo (§08, §11).
 - [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) · [`ejemplos/serena/`](./ejemplos/serena/) — las herramientas del método, en profundidad (§09).
 - [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§10).
-- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización entre máquinas (§11).
+- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización: `machine-sync/` (tarball+USB, bring-up completo), `ils-to-main/` (delta de vuelta) y **`s3-sync/`** (el registro de ingeniería compartido sobre S3: sync vs mount de solo lectura, roles publisher/contributor, identidad por máquina) (§11).
 
 **Parte 3:**
 - [`docs/knowledge-graph/`](./docs/knowledge-graph/) — el grafo de conocimiento de tickets, construido con **graphify**: diseño (`design.md`), scripts (`kg_query.sh`, `kg_refresh.sh`, `build_manifest.py`, `stage_corpus.py`), tests, `manifest.txt` y la **salida real** (`output/graph.html` interactivo + `GRAPH_REPORT.md`) (§12).

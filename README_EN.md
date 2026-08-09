@@ -14,7 +14,7 @@ parts**, two written guides, and real, runnable examples. Aimed at **developers*
   agent teams** · automation.
 - **Part 2 — The methodology (tool-agnostic):** the real 11-stage workflow with gates · the method's
   tools (CodeGraph, Serena, GSD, deterministic oracles) · transferring it to another agent
-  (GitHub Copilot) · machine sync.
+  (GitHub Copilot) · machine sync **and the shared engineering record over S3**.
 - **Part 3 — The ticket knowledge graph:** a complete case built with **graphify**: manifest-driven
   corpus, `/kg-refresh` pipeline, zero-LLM `/kg` queries, the real graph visualization
   (507 nodes · 35 communities) and where it hooks into the methodology.
@@ -28,6 +28,8 @@ parts**, two written guides, and real, runnable examples. Aimed at **developers*
 | [`presentacion/Claude_Code_Presentacion_EN.pptx`](./presentacion/) | The deck in English (16:9, 39 slides, with part separators). |
 | [`ejemplos/`](./ejemplos/) | Real artifacts, grouped by course section (in Spanish). |
 | [`docs/`](./docs/) | **Reference**: documents from a real production installation where the methodology is applied daily. |
+| [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) | The portable starter-kit, in English: [`README.md`](./docs/ai-agents-code-methodology/README.md) (plain-English overview) and [`TECHNICAL.md`](./docs/ai-agents-code-methodology/TECHNICAL.md) (the implementation-level playbook — gates, harnesses, proofs). |
+| [`docs/synchro/`](./docs/synchro/) | Sync runbooks: `machine-sync/` (tarball+USB full bring-up), `ils-to-main/` (delta back), and **`s3-sync/`** (the shared engineering record over S3 — sync vs read-only mount, publisher/contributor roles, per-machine identity). |
 
 ## Technology documentation
 
