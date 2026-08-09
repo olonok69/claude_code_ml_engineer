@@ -378,9 +378,12 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 4. **Investigar** — **oráculo determinista** (parser/validador) primero; el LLM se reserva para verificar.
 5. **Plan** — proponer opciones + trade-offs; **acuerdo humano** explícito antes de tocar código.
 6. **Implementar** — TDD: RED (por el motivo correcto) → GREEN, cambio mínimo.
-7. **Verificar** — unit + scoped + regresión + **gate outbound** (tres checks): reproducir el contrato en la
-   **etapa real de salida** (el *wrapper* que reconstruye la salida, no una función interna), que el JSON
-   local case, y verificarlo **dentro de la imagen desplegada** — los tests en verde no prueban lo que se envía.
+7. **Verificar** — unit + scoped + regresión + **gate outbound** (cinco checks): **(0) validar el
+   instrumento de medida** contra un caso de respuesta conocida antes de fiarte de él; (1) reproducir el
+   contrato en la **etapa real de salida** (el *wrapper* que reconstruye la salida, no una función interna);
+   (2) que el JSON local case — **verificado sobre la lista de miembros, nunca sobre un total**; (3)
+   verificarlo **dentro de la imagen desplegada**; (4) **mirar** la salida renderizada antes del PR. Los
+   tests en verde no prueban lo que se envía.
 8. **Documentar** — porqué + qué + handover + criterios de aceptación, cada cosa **una vez**.
 9. **Sanitizar** — escanear las **líneas añadidas** por nombres/IDs/secretos/atribución del agente.
 10. **Handoff** — el humano (o un tool suyo, p. ej. Cursor) hace push/PR/deploy. El agente **nunca**.
@@ -391,6 +394,17 @@ Encadenadas por **gates** (los recuadros coral del diagrama); un gate rojo es un
 > el agente **lee** esos hechos, **razona** y **decide** — y eso cuesta. El método no elimina el coste, lo
 > **concentra**: barato en 1–3 y 9 (leer hechos + decidir), **caro en 5–6–7** (plan, código, verify), donde el
 > modelo *piensa y crea*. Tabla coste-por-etapa: [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md).
+
+> **El punto débil resultó ser el gate, no el fix.** Tres formas de que un verde no pruebe nada, las tres
+> reales: **(a)** un **instrumento roto** — saltarse el constructor para sondear un predicado deja atributos
+> sin asignar; si el método los lee y tiene su propio `try/except`, el error vuelve como un `False` plausible
+> y el sondeo reporta un "no" uniforme para *todos* los casos; **(b)** un **total que cuadra** — un elemento
+> de más y uno de menos se cancelan, así que hay que afirmar sobre la **lista** (títulos/ids), no sobre
+> `len(...)`; cuanto más cerca cae el número del esperado, **más** sospechoso; **(c)** un **gate que no podía
+> fallar** — si el corpus de referencia no tiene ningún ejemplo de la forma que tocaste, la pasada limpia
+> demuestra *no-regresión y nada más* (caso real: un detector que dispara en **0 de 190** documentos:
+> `fires=0` se lee igual si el código es correcto o si está roto del todo). Di siempre qué **puede** y qué
+> **no puede** demostrar cada gate.
 
 ### Un ejemplo real (ver [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
 Bug: *"un campo sale vacío en la UI pero está en el PDF."* → Orientar (STATUS.md encuentra un
@@ -530,7 +544,36 @@ es solo para código:
   `snapshot-memory` la parquea bajo `data/` para que viaje y `restore-memory` la fusiona de vuelta (con backup)
   antes de `/kg-refresh`. Un `LAPTOP_START_HERE.md` es el punto de entrada único para el agente del portátil.
 
+**Y el paso siguiente: de *transportar* a *compartir* (S3).** El tarball resuelve mover el workspace
+entre **tus** máquinas. No resuelve que un **equipo** trabaje sobre el mismo registro. Con una tercera
+máquina y una segunda persona salen tres costes: el registro es gitignored → **no se puede enlazar**
+desde un ticket o un PR; moverse degenera en empaquetarlo todo; y cada persona acaba con **su propio
+índice privado** de la misma historia. Runbook:
+[`docs/synchro/s3-sync/README.md`](./docs/synchro/s3-sync/README.md).
+
+- **Alcance estrecho a propósito:** solo los docs de ingeniería + el grafo. **Nada** de documentos de
+  cliente, fixtures ni binarios sin firma del dueño del bucket — es a la vez línea de confidencialidad
+  y de tamaño, y ensanchar después es fácil; retraer, no.
+- **Escribe por sync, lee por mount de solo lectura.** El almacenamiento de objetos **no** tiene
+  locking ni rename atómico: un mount escribible no es una comodidad, es corrupción que descubres
+  semanas después. El solo-lectura es la propiedad de seguridad, no una limitación.
+- **Lo destructivo es opt-in:** dry-run por defecto, `--go` explícito, y `--delete` aparte — porque el
+  caso normal es que un compañero esté empujando a la vez y un espejo exacto desde una vista vieja
+  **borra su trabajo**.
+- **Los docs son la fuente de verdad; el grafo es derivado.** Los ficheros por ticket casi nunca
+  chocan (cada uno trabaja en tickets distintos); el grafo generado es el **único** punto real de
+  contención → o se reconstruye en local, o lo publica **una sola** máquina.
+- **Lo específico de agentes — la máquina tiene rol.** Este detalle solo aparece cuando el mismo
+  registro es alcanzable desde varias máquinas con permisos distintos, y es el más fácil de olvidar:
+  la sesión tiene que saber **dónde está y qué le está permitido** *antes* de actuar. Si no, una
+  máquina *contributor* republicará el grafo compartido —lo único que no debe hacer— y encima lo
+  reportará como trabajo bien hecho. Cada máquina declara nombre y rol, genera un `IDENTITY.md`
+  **machine-local** con checks en vivo, y el `CLAUDE.md` apunta a él: toda sesión lee su rol primero.
+
 🗣️ *"La metodología no es solo para código: memoria durable, guardrails y 'el humano hace lo externo' también en ops."*
+
+🗣️ *"Y cuando el rastro durable pasa de una máquina a un equipo, aparece una pregunta nueva que no
+existía: el agente tiene que saber en qué máquina está antes de actuar."*
 
 ---
 
