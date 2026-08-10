@@ -601,7 +601,8 @@ def build():
     divider(s, 2, "La metodología",
             "Agnóstica de la herramienta: se demuestra con Claude Code, pero la disciplina viaja.",
             ["08 · El flujo de 11 etapas + ejemplo real", "09 · Las herramientas del método",
-             "10 · Transferir a otro agente (Copilot)", "11 · Sincronización de máquinas"], page=pg)
+             "10 · Transferir a otro agente (Copilot)",
+             "11 · Sincronizar máquinas: transportar y compartir (S3)"], page=pg)
 
     # ---- 21. Principio
     s, pg = new()
@@ -632,7 +633,7 @@ def build():
         ("4", "Investigar: oráculo determinista barato", False),
         ("5", "Plan → acuerdo humano explícito", True),
         ("6", "Implementar: TDD RED → GREEN, mínimo", False),
-        ("7", "Verificar: contrato (wrapper) + imagen desplegada", True),
+        ("7", "Verificar: 5 checks (instrumento → contrato → imagen)", True),
         ("8", "Documentar — cada cosa una vez", False),
         ("9", "Sanitizar — líneas añadidas", False),
         ("10", "Handoff: el humano hace push / PR", False),
@@ -650,9 +651,11 @@ def build():
         text(s, x + 0.14, y + 0.11, 0.34, 0.34,
              [[R(n, 11, BG if gate else TEXT, True)]], align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         text(s, x + 0.62, y + 0.06, 5.1, 0.46, [[R(label, 11.5, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE)
-    text(s, 0.7, 6.02, 11.95, 0.3,
-         [[R("■ ", 11, CORAL, True), R("Los recuadros coral son GATES (puntos de decisión). "
-           "Un gate rojo = STOP: no escribir código.", 11, MUTED, False)]])
+    text(s, 0.7, 5.99, 11.95, 0.34,
+         [[R("■ ", 10.5, CORAL, True), R("Coral = GATE (STOP: no escribir código).   ", 10.5, MUTED, False),
+           R("Etapa 7, los 5 checks: ", 10.5, TEXT, True),
+           R("instrumento · contrato (wrapper) · miembros, no totales · imagen · mirar",
+             10.5, MUTED, False)]])
     takeaway(s, "El agente orquesta y es donde vive la inferencia; lo caro se concentra en plan/código/verify, no en buscar.")
 
     # ---- 23. Ejemplo real
@@ -820,9 +823,9 @@ def build():
                   accent=CORAL)
     takeaway(s, "Si solo conservas cinco reglas, conserva esas cinco. Las tools se sustituyen; la disciplina viaja.")
 
-    # ---- Machine sync
+    # ---- Machine sync (A: transportar)
     s, pg = new()
-    base(s, "Parte 2 · 11 · Ops", "Un runbook real: sincronizar máquinas", page=pg)
+    base(s, "Parte 2 · 11 · Ops", "Sincronizar máquinas (A): transportar", page=pg)
     panel_bullets(s, 0.7, 2.0, 5.85, 2.7, "Outbound — copia completa",
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
@@ -839,6 +842,31 @@ def build():
                    "El humano hace push / merge; el agente prepara y reporta con evidencia (conteos, PRs)"],
                   accent=CORAL)
     takeaway(s, "La metodología no es solo para código: memoria durable, guardrails y 'el humano hace lo externo' también en ops.")
+
+    # ---- Machine sync (B: compartir sobre S3)
+    s, pg = new()
+    base(s, "Parte 2 · 11 · Ops", "Sincronizar máquinas (B): compartir sobre S3", page=pg)
+    text(s, 0.7, 1.92, 11.95, 0.42,
+         [[R("El tarball resuelve ", 12, MUTED, False), R("transportar", 12, TEXT, True),
+           R(" entre TUS máquinas. No resuelve ", 12, MUTED, False), R("compartir", 12, TEXT, True),
+           R(": el registro es gitignored → no se puede enlazar desde un ticket, y cada persona "
+             "acaba con su propio índice privado de la misma historia.", 12, MUTED, False)]],
+         line_spacing=1.05)
+    panel_bullets(s, 0.7, 2.52, 5.85, 2.25, "Las reglas que lo hacen seguro",
+                  ["Alcance estrecho: docs + grafo. Nada de datos de cliente",
+                   "Escribe por sync · lee por mount de SOLO LECTURA",
+                   "Dry-run por defecto; --go explícito; --delete aparte",
+                   "Versionado del bucket = red de recuperación"], accent=BLUE)
+    panel_bullets(s, 6.8, 2.52, 5.85, 2.25, "Fuente de verdad vs. derivado",
+                  ["Los docs mandan; el grafo se DERIVA de ellos",
+                   "Los ficheros por ticket casi nunca chocan",
+                   "El grafo es el único punto real de contención",
+                   "→ reconstruir en local, o UN solo publisher"], accent=GREEN)
+    panel_bullets(s, 0.7, 4.89, 11.95, 1.32, "Lo específico de los agentes: la máquina tiene rol",
+                  ["Varias máquinas, permisos distintos → la sesión debe saber DÓNDE está antes de actuar",
+                   "MACHINE_NAME / MACHINE_ROLE → IDENTITY.md (machine-local) ← CLAUDE.md apunta a él"],
+                  accent=CORAL)
+    takeaway(s, "Un mount escribible sobre almacenamiento de objetos no es una comodidad: es corrupción que descubres semanas después.")
 
     # =========================================================================
     # PARTE 3 — EL GRAFO DE CONOCIMIENTO DE TICKETS (GRAPHIFY)
