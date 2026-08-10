@@ -25,7 +25,8 @@ parts**, two written guides, and real, runnable examples. Aimed at **developers*
 |---|---|
 | [`GUIA_PRESENTACION_EN.md`](./GUIA_PRESENTACION_EN.md) | Speaker guide, in three parts: the narrative per slide block + closing one-liners 🗣️ + links to the code. |
 | [`GUIA_TECNICA_EN.md`](./GUIA_TECNICA_EN.md) | Copy-paste implementation reference (configs, commands, code). |
-| [`presentacion/Claude_Code_Presentacion_EN.pptx`](./presentacion/) | The deck in English (16:9, 39 slides). ⚠️ **Behind the Spanish deck (40 slides):** it lacks the S3 shared-record slide and the five-check outbound gate. `build_pptx.py` generates the Spanish deck only — there is no build path for the English one, so updating it means writing that first. |
+| [`presentacion/Claude_Code_Presentacion_EN.pptx`](./presentacion/) | The deck in English (16:9, **40 slides**, level with the Spanish one). Rebuild with `python presentacion/build_pptx.py --lang en && python presentacion/merge_manual_slides.py --lang en`. |
+| [`presentacion/translations_en.py`](./presentacion/translations_en.py) | The ES→EN line table `--lang en` uses. There is **one** layout for both languages: the deck is always drawn in Spanish and translated as it is emitted, so adding a slide adds it to both decks and the only thing that can be missing is its translation — which the build lists at the end rather than swallowing. |
 | [`ejemplos/`](./ejemplos/) | Real artifacts, grouped by course section (in Spanish). |
 | [`docs/`](./docs/) | **Reference**: documents from a real production installation where the methodology is applied daily. |
 | [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) | The portable starter-kit, in English: [`README.md`](./docs/ai-agents-code-methodology/README.md) (plain-English overview) and [`TECHNICAL.md`](./docs/ai-agents-code-methodology/TECHNICAL.md) (the implementation-level playbook — gates, harnesses, proofs). |
