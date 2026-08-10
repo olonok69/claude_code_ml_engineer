@@ -23,8 +23,10 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 |---|---|
 | [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente, en dos partes: hilo a contar por slide + frases de cierre 🗣️ + links al código. |
 | [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código), en las mismas dos partes. |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, 39 slides — 36 generadas + portada, diagrama de teams y arquitectura añadidas a mano; versión EN: Claude_Code_Presentacion_EN.pptx). |
-| [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (regenerable). |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, **40 slides** = 37 generadas + 3 hechas a mano; versión EN: Claude_Code_Presentacion_EN.pptx, **39 slides, aún sin actualizar** — ver abajo). |
+| [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (37 slides). **Guarda encima del `.pptx`.** |
+| [`presentacion/manual_slides.pptx`](./presentacion/manual_slides.pptx) | Las 3 slides hechas a mano (portada de marca, diagrama de teams, arquitectura). No se pueden generar desde el script; viven aquí para que el deck sea reproducible. |
+| [`presentacion/merge_manual_slides.py`](./presentacion/merge_manual_slides.py) | Reinserta esas 3 slides en el deck recién generado (posiciones 1, 18 y 24). |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
 | [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
 
@@ -55,11 +57,26 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 
 ```bash
 pip install python-pptx pillow
-python presentacion/build_pptx.py             # -> presentacion/Claude_Code_Presentacion.pptx
+
+# El deck son DOS pasos, y el segundo no es opcional:
+python presentacion/build_pptx.py             # -> 37 slides generadas (SOBRESCRIBE el .pptx)
+python presentacion/merge_manual_slides.py    # -> 40: reinserta las 3 slides hechas a mano
+
 python ejemplos/metodologia/render_flow.py    # -> flow.png (flujo de 11 etapas)
 python ejemplos/subagents/render_agents.py    # -> agents.png (subagentes vs agent teams)
 python presentacion/capture_kg_graph.py       # -> kg_graph.png (captura del grafo de tickets; requiere playwright)
 ```
+
+> ⚠️ **Por qué dos pasos.** Tres slides (portada de marca, diagrama de teams, arquitectura) se
+> hicieron a mano en PowerPoint y **no** se pueden dibujar desde el script. `build_pptx.py` guarda
+> directamente encima del `.pptx`, así que ejecutarlo **solo** destruía esas tres en silencio: el deck
+> parecía regenerable y no lo era. Ahora viven en `manual_slides.pptx` y `merge_manual_slides.py` las
+> vuelve a poner. Si añades slides generadas **antes** de las posiciones 1/18/24, actualiza `MANUAL_AT`
+> en ese script.
+>
+> **El deck EN está desactualizado a propósito:** `build_pptx.py` solo genera el castellano y no hay
+> generador para `Claude_Code_Presentacion_EN.pptx`. Actualizarlo requiere escribir antes esa ruta de
+> build; hasta entonces el EN se queda en 39 slides y sin la parte de S3.
 
 ## Documentación de las tecnologías
 
