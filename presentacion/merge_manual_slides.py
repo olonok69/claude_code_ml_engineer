@@ -15,8 +15,14 @@ a landmine: the deck looked regenerable and wasn't.
 The three slides now live in `manual_slides.pptx` (extracted once, committed), and
 the full deck is reproducible in two steps:
 
-    python presentacion/build_pptx.py            # 37 generated slides
-    python presentacion/merge_manual_slides.py   # -> 40, manual slides restored
+    python presentacion/build_pptx.py                     # 37 generated slides
+    python presentacion/merge_manual_slides.py            # -> 40, manual slides restored
+
+    python presentacion/build_pptx.py --lang en           # same layout, English strings
+    python presentacion/merge_manual_slides.py --lang en  # -> 40, from manual_slides_EN.pptx
+
+The English manual slides are a separate file because those three carry translated
+headers of their own (same images, different text).
 
 Idempotent: it always rebuilds the merge from `manual_slides.pptx`, so running it
 twice is harmless.
@@ -34,8 +40,15 @@ import sys
 from pptx import Presentation
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-GENERATED = os.path.join(HERE, "Claude_Code_Presentacion.pptx")
-MANUAL = os.path.join(HERE, "manual_slides.pptx")
+
+
+def paths(lang: str) -> tuple[str, str]:
+    """(generated deck, manual-slides source) for a language."""
+    if lang == "es":
+        return (os.path.join(HERE, "Claude_Code_Presentacion.pptx"),
+                os.path.join(HERE, "manual_slides.pptx"))
+    return (os.path.join(HERE, f"Claude_Code_Presentacion_{lang.upper()}.pptx"),
+            os.path.join(HERE, f"manual_slides_{lang.upper()}.pptx"))
 
 # (index in manual_slides.pptx, 1-based position in the final deck, label)
 MANUAL_AT = [
@@ -75,12 +88,13 @@ def move_slide(prs, from_idx, to_idx):
     ids.insert(to_idx, items[from_idx])
 
 
-def main() -> int:
+def main(lang: str = "es") -> int:
+    GENERATED, MANUAL = paths(lang)
     for path, what in ((GENERATED, "generated deck"), (MANUAL, "manual slides")):
         if not os.path.exists(path):
             print(f"ERROR: missing {what}: {path}", file=sys.stderr)
             if path == GENERATED:
-                print("       run build_pptx.py first", file=sys.stderr)
+                print(f"       run build_pptx.py --lang {lang} first", file=sys.stderr)
             return 1
 
     prs = Presentation(GENERATED)
@@ -109,4 +123,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Reinserta las slides hechas a mano.")
+    ap.add_argument("--lang", choices=("es", "en"), default="es")
+    raise SystemExit(main(ap.parse_args().lang))

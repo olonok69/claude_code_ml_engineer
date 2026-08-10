@@ -43,6 +43,59 @@ MONO     = "Consolas"
 
 EMU_W, EMU_H = Inches(13.333), Inches(7.5)
 
+# ----------------------------------------------------------------------------- idioma
+# El deck se dibuja SIEMPRE en castellano; `--lang en` traduce línea a línea al
+# emitir, usando presentacion/translations_en.py. Así hay UN solo layout que
+# mantener: añadir una slide la añade en los dos idiomas, y lo único que puede
+# faltar es su traducción (que se reporta al final, no se traga en silencio).
+LANG = "es"
+_MISSES: list[str] = []
+_SOFT: list[str] = []
+
+
+def _translate(para):
+    """para: lista de tuplas R(). Devuelve la versión traducida si LANG != es."""
+    if LANG == "es":
+        return para
+    import sys
+
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from translations_en import TRANSLATIONS
+
+    key = "".join(t for (t, *_rest) in para)
+    if not key.strip():
+        return para
+    en = TRANSLATIONS.get(key)
+    if en is None:
+        # Solo interesa avisar de prosa: el código, las URLs y los nombres propios
+        # pasan tal cual a propósito.
+        if any(ch.isalpha() for ch in key) and len(key) > 3:
+            _MISSES.append(key)
+        return para
+    if len(en) != len(para):
+        # Los decks se re-guardaron en PowerPoint, que FUSIONA runs adyacentes con el
+        # mismo formato: una línea que aquí se emite en 5 runs puede estar en el deck
+        # como 1. Se conservan los runs iniciales que coinciden literalmente (marcadores
+        # tipo "▸  " o "■ ", idénticos en ambos idiomas) y el resto se junta en el
+        # siguiente run — así no se pierde texto y el marcador mantiene su color.
+        keep = 0
+        while keep < min(len(en), len(para)) and en[keep] == para[keep][0]:
+            keep += 1
+        merged = "".join(en[keep:])
+        out = []
+        for i, (t, *rest) in enumerate(para):
+            if i < keep:
+                out.append((en[i], *rest))
+            elif i == keep:
+                out.append((merged, *rest))
+            else:
+                out.append(("", *rest))
+        _SOFT.append(f"[runs {len(para)}<-{len(en)}, merged at {keep}] {key[:70]}")
+        return out
+    return [(en[i], *rest) for i, (t, *rest) in enumerate(para)]
+
 
 # ----------------------------------------------------------------------------- helpers
 def _solid(shape, color):
@@ -90,6 +143,7 @@ def text(slide, x, y, w, h, runs, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP,
     tf.vertical_anchor = anchor
     tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
     for i, para in enumerate(runs):
+        para = _translate(para)
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.alignment = align
         p.space_after = Pt(space_after)
@@ -1004,11 +1058,28 @@ def build():
          [[R("Referencias:  code.claude.com/docs  ·  github.com/tomascortereal/claude-code-setup  ·  "
              "colbymchenry.github.io/codegraph  ·  github.com/oraios/serena", 11, FAINT, False)]])
 
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Claude_Code_Presentacion.pptx")
+    name = "Claude_Code_Presentacion.pptx" if LANG == "es" else f"Claude_Code_Presentacion_{LANG.upper()}.pptx"
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
     prs.save(out)
-    print(f"OK  ->  {out}  ({len(prs.slides._sldIdLst)} slides)")
+    print(f"OK  ->  {out}  ({len(prs.slides._sldIdLst)} slides, lang={LANG})")
+    if _SOFT:
+        print(f"\n  {len(set(_SOFT))} line(s) re-joined (run split differs; text intact):")
+        for k in sorted(set(_SOFT)):
+            print(f"    ~ {k[:100]}")
+    if _MISSES:
+        uniq = sorted(set(_MISSES))
+        print(f"\n  {len(uniq)} line(s) with NO translation — they shipped in Spanish:")
+        for k in uniq:
+            print(f"    - {k[:100]}")
+        print("  Add them to presentacion/translations_en.py and re-run.")
     return out
 
 
 if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Genera el deck del curso.")
+    ap.add_argument("--lang", choices=("es", "en"), default="es",
+                    help="es (por defecto) o en; 'en' traduce vía translations_en.py")
+    LANG = ap.parse_args().lang
     build()

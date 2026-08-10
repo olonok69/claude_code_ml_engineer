@@ -23,10 +23,11 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 |---|---|
 | [`GUIA_PRESENTACION.md`](./GUIA_PRESENTACION.md) | Guía narrativa para el/la ponente, en dos partes: hilo a contar por slide + frases de cierre 🗣️ + links al código. |
 | [`GUIA_TECNICA.md`](./GUIA_TECNICA.md) | Referencia de implementación copy-paste (configs, comandos, código), en las mismas dos partes. |
-| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, **40 slides** = 37 generadas + 3 hechas a mano; versión EN: Claude_Code_Presentacion_EN.pptx, **39 slides, aún sin actualizar** — ver abajo). |
-| [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador del deck (37 slides). **Guarda encima del `.pptx`.** |
-| [`presentacion/manual_slides.pptx`](./presentacion/manual_slides.pptx) | Las 3 slides hechas a mano (portada de marca, diagrama de teams, arquitectura). No se pueden generar desde el script; viven aquí para que el deck sea reproducible. |
-| [`presentacion/merge_manual_slides.py`](./presentacion/merge_manual_slides.py) | Reinserta esas 3 slides en el deck recién generado (posiciones 1, 18 y 24). |
+| [`presentacion/Claude_Code_Presentacion.pptx`](./presentacion/) | El deck (16:9, **40 slides** = 37 generadas + 3 hechas a mano). Versión EN: `Claude_Code_Presentacion_EN.pptx`, **también 40 y al día**. |
+| [`presentacion/build_pptx.py`](./presentacion/build_pptx.py) | Generador (37 slides). `--lang es\|en`. **Guarda encima del `.pptx`.** |
+| [`presentacion/translations_en.py`](./presentacion/translations_en.py) | Tabla ES→EN línea a línea que usa `--lang en`. Un único layout para los dos idiomas. |
+| [`presentacion/manual_slides.pptx`](./presentacion/manual_slides.pptx) · `manual_slides_EN.pptx` | Las 3 slides hechas a mano (portada de marca, diagrama de teams, arquitectura). No se pueden generar desde el script; viven aquí para que el deck sea reproducible. Hay una por idioma: mismas imágenes, cabeceras traducidas. |
+| [`presentacion/merge_manual_slides.py`](./presentacion/merge_manual_slides.py) | Reinserta esas 3 slides en el deck recién generado (posiciones 1, 18 y 24). `--lang es\|en`. |
 | [`ejemplos/`](./ejemplos/) | Artefactos reales, agrupados por sección del curso. |
 | [`docs/`](./docs/) | **Referencia**: documentos de una instalación real donde se aplica la metodología a diario (knowledge graph, adaptación a Copilot, runbooks de sync, setup de CodeGraph+GSD). |
 
@@ -58,9 +59,12 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 ```bash
 pip install python-pptx pillow
 
-# El deck son DOS pasos, y el segundo no es opcional:
-python presentacion/build_pptx.py             # -> 37 slides generadas (SOBRESCRIBE el .pptx)
-python presentacion/merge_manual_slides.py    # -> 40: reinserta las 3 slides hechas a mano
+# El deck son DOS pasos por idioma, y el segundo no es opcional:
+python presentacion/build_pptx.py                      # ES -> 37 slides (SOBRESCRIBE el .pptx)
+python presentacion/merge_manual_slides.py             # ES -> 40
+
+python presentacion/build_pptx.py --lang en            # EN -> 37, mismo layout
+python presentacion/merge_manual_slides.py --lang en   # EN -> 40
 
 python ejemplos/metodologia/render_flow.py    # -> flow.png (flujo de 11 etapas)
 python ejemplos/subagents/render_agents.py    # -> agents.png (subagentes vs agent teams)
@@ -74,9 +78,12 @@ python presentacion/capture_kg_graph.py       # -> kg_graph.png (captura del gra
 > vuelve a poner. Si añades slides generadas **antes** de las posiciones 1/18/24, actualiza `MANUAL_AT`
 > en ese script.
 >
-> **El deck EN está desactualizado a propósito:** `build_pptx.py` solo genera el castellano y no hay
-> generador para `Claude_Code_Presentacion_EN.pptx`. Actualizarlo requiere escribir antes esa ruta de
-> build; hasta entonces el EN se queda en 39 slides y sin la parte de S3.
+> **Un solo layout, dos idiomas.** El deck se dibuja siempre en castellano y `--lang en` lo traduce
+> **línea a línea** al emitir, con la tabla de `translations_en.py` (clave = la línea española completa;
+> valor = sus runs en inglés, para conservar negritas y colores). Así **añadir una slide la añade en los
+> dos idiomas** y lo único que puede faltar es su traducción — que `--lang en` **lista al terminar** en
+> vez de tragársela en silencio. Si ves líneas reportadas, añádelas a la sección MANUAL de
+> `translations_en.py` y vuelve a generar.
 
 ## Documentación de las tecnologías
 
