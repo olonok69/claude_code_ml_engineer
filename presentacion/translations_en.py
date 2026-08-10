@@ -782,7 +782,7 @@ TRANSLATIONS = {
     'Un curso, tres partes':
         ('One course, three parts',),
     'Un ejemplo real, Arquitectura Aplicacion':
-        ('A ', 'example', ' real, ', 'Architecture', ' ', 'Application'),
+        ('A real example: application architecture',),
     'Un ejemplo real, de principio a fin':
         ('A real example, end to end',),
     'Un runbook real: sincronizar máquinas':
