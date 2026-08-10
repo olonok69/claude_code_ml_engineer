@@ -781,7 +781,7 @@ TRANSLATIONS = {
         ("A complete case built with graphify — not CodeGraph: the project's memory, navigable.",),
     'Un curso, tres partes':
         ('One course, three parts',),
-    'Un ejemplo real, Arquitectura Aplicacion':
+    'Un ejemplo real: arquitectura de la aplicación':
         ('A real example: application architecture',),
     'Un ejemplo real, de principio a fin':
         ('A real example, end to end',),
