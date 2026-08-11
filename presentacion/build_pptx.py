@@ -915,7 +915,7 @@ def build():
                   ["Los docs mandan; el grafo se DERIVA de ellos",
                    "Los ficheros por ticket casi nunca chocan",
                    "El grafo es el único punto real de contención",
-                   "→ reconstruir en local, o UN solo publisher"], accent=GREEN)
+                   "→ UN solo publisher. \"Derivado\" es del fichero, no de la carpeta"], accent=GREEN)
     panel_bullets(s, 0.7, 4.89, 11.95, 1.32, "Lo específico de los agentes: la máquina tiene rol",
                   ["Varias máquinas, permisos distintos → la sesión debe saber DÓNDE está antes de actuar",
                    "MACHINE_NAME / MACHINE_ROLE → IDENTITY.md (machine-local) ← CLAUDE.md apunta a él"],
@@ -1019,7 +1019,7 @@ def build():
            R("→ la zona de peligro completa al instante: los 5-6 tickets que comparten ese código.",
              11.5, MUTED, False)]], line_spacing=1.1)
     panel_bullets(s, 0.7, 5.2, 11.95, 1.0, "Honestidad y ciclo de vida",
-                  ["Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado: nunca viaja, se reconstruye"],
+                  ["Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado se reconstruye, pero lo escrito a mano viaja"],
                   accent=BLUE)
     takeaway(s, "Un paso semántico en el build, cero LLM en la consulta. El grafo es el mapa; el agente, el guía.")
 

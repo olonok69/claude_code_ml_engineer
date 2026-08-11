@@ -1111,8 +1111,8 @@ TRANSLATIONS = {
         ('▸  ', 'They can debate findings, not just report'),
     '▸  Rastro durable: porqué, qué, cómo se verificó':
         ('▸  ', 'Durable trail: why, what, how it was verified'),
-    '▸  Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado: nunca viaja, se reconstruye':
-        ('▸  ', 'Recall in dense zones · EXTRACTED = reliable, INFERRED = hint · internal (data/) · derived: never travels, gets rebuilt'),
+    '▸  Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado se reconstruye, pero lo escrito a mano viaja':
+        ('▸  ', 'Recall in dense zones · EXTRACTED = reliable, INFERRED = hint · internal (data/) · derived gets rebuilt, but hand-authored files travel'),
     '▸  Regla history-first del CLAUDE.md:':
         ('▸  ', 'CLAUDE.md history-first rule:'),
     '▸  Regla write-once: el core apunta, no copia':
@@ -1268,8 +1268,8 @@ TRANSLATIONS.update({
         ("▸  ", "Per-ticket files almost never collide"),
     "▸  El grafo es el único punto real de contención":
         ("▸  ", "The graph is the only real contention point"),
-    "▸  → reconstruir en local, o UN solo publisher":
-        ("▸  ", "→ rebuild locally, or ONE single publisher"),
+    "▸  → UN solo publisher. \"Derivado\" es del fichero, no de la carpeta":
+        ("▸  ", "→ ONE single publisher. \"Derived\" is per file, not per folder"),
     "▸  Varias máquinas, permisos distintos → la sesión debe saber DÓNDE está antes de actuar":
         ("▸  ", "Several machines, different permissions → the session must know WHERE it is before acting"),
     "▸  MACHINE_NAME / MACHINE_ROLE → IDENTITY.md (machine-local) ← CLAUDE.md apunta a él":

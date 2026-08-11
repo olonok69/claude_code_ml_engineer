@@ -426,7 +426,7 @@ Diagram: [`metodologia/flow.png`](./ejemplos/metodologia/flow.png) (source `flow
 > before/after artifacts are **mandatory**.
 > Green tests are not proof of what gets deployed.
 
-> **Three ways a green gate proves nothing** — all three have bitten us:
+> **Five ways a green gate proves nothing** — all five have bitten us:
 > **Broken instrument.** Bypassing the constructor to probe a predicate cheaply leaves unset every attribute
 > you didn't think to set; if the method reads one and has its own `try/except`, the error is swallowed and
 > comes back as a plausible `False`. The probe then reports a confident, uniform "no" for **every** case.
@@ -439,6 +439,20 @@ Diagram: [`metodologia/flow.png`](./ejemplos/metodologia/flow.png) (source `flow
 > touched, the clean run proves **no-regression and nothing else**. Say so explicitly, and name what carries
 > the correctness evidence instead. (Real case: a detector that fires on **0 of 190** corpus documents —
 > `fires=0` reads identically whether the code is correct or completely broken.)
+> **A canary that never applied the real perturbation.** The instrument can be flawless and still prove
+> nothing, because what it does to the data **is not what production does**. Real case: the synthetic test
+> renamed the *containers* and churned 4% of the items, recovered **100%** of the mapping, and was reported
+> as "verified"; the real rebuild changed something the test never touched — the **identifiers of the items
+> themselves**, 88% of them — and recovery fell below **1%**. Before trusting a green canary, state in one
+> sentence *what production does to this data* and check the canary does the same. If you can't, the gate is
+> **unproven**: "the test I could build passed" is not "the risk is retired".
+> **A structural gate read as a semantic one.** Checking that everything is present, unique and correctly
+> wired says **nothing** about whether any of it is *right*. Real case: a migration reported a clean bill of
+> health — every group matched, none lost, zero orphans — while **56%** of the carried-over names did not
+> describe what they were attached to, because the matching had fallen back to a shallow proxy. A wrong name
+> is **worse** than a missing one: the missing one asks a question, the wrong one answers it incorrectly and
+> sends the next person to the wrong place. When a value's correctness is a matter of **meaning**, no
+> automated check retires it — schedule the human read and say so in the gate's description.
 
 > **The output contract is a living document.** When a change alters what is emitted, consult the governing
 > rule **before** designing the fix and do exactly one of three things: **comply**, **revise** it as part of
@@ -711,8 +725,23 @@ Hooked into the **history-first** rule of the `CLAUDE.md` (stage 1, Orient): run
 to read (it points to *what to read*, it doesn't replace it). Honesty: the real gain is **recall in dense
 zones**; `EXTRACTED` = reliable, `INFERRED` = a lead to verify. In the real installation everything lives under
 gitignored `data/` (the nodes carry internal names → internal; sharing outside = a separate sanitization pass).
-It is a **derived** artifact: it never travels between machines; it's rebuilt wherever the corpus is (§15, with
-`bootstrap` / `snapshot-memory` / `restore-memory` closing the loop).
+It is a **derived** artifact: it's rebuilt wherever the corpus is (§15, with `bootstrap` /
+`snapshot-memory` / `restore-memory` closing the loop).
+
+> ⚠️ **Correction: "derived" is a property of the file, not of the folder.** This guide used to say the
+> graph "never travels between machines" because it gets rebuilt. That holds **only while rebuilding is
+> lossless**, and it stopped being so: inside the generated tree lives a **hand-authored** file — the
+> curated community names — that nothing regenerates. A rebuild re-derives the graph's internal
+> identifiers from scratch, so the names no longer attach to anything: measured on a real rebuild,
+> **under 1% survived**, and even after fixing the underlying cause only ~38% carried across. Recreating
+> them is an hour of judgement, not a command. Classify **per file**: *source*, *derived*, and
+> **"authored but living inside the derived tree"** — the third is treated as source: it always travels.
+>
+> And because the names overlay is only meaningful against the exact graph it came from, while
+> `aws s3 sync` compares **each object independently**, a machine can end up with a new graph and an old
+> overlay. That raises no error: it produces **names attached to the wrong communities**. Stamp the
+> overlay with a **fingerprint of the graph** it was built against, and make the health check fail loudly
+> when they disagree. A per-file sync cannot express atomicity; the check has to live in the data.
 
 > **Cost — honest, and why it pays off.** "No LLM at query time" is **not** "free": the expensive reasoning
 > is paid **once** when building the graph (`/kg-refresh`, with subagents); each `/kg` is then a deterministic
