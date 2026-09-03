@@ -34,7 +34,9 @@
 > while diagnosing (§2). §6 gains the two dimensions it was missing — **time**,
 > how in-flight state survives a session boundary, and **density**, the index
 > tunable no structural gate can see. §7 gains **least privilege**: the obvious
-> grant on a shared record widens access instead of narrowing it.
+> grant on a shared record widens access instead of narrowing it. It also adds
+> the sharpest lesson of the set (§4): a test suite is downstream of your
+> specification and cannot tell you the specification is wrong.
 
 ---
 
@@ -224,7 +226,7 @@ Five concentric layers, each a real gate:
 Keep each defect's scoped suite as a permanent artifact named for the defect,
 so the next person sees both the guard and the example that motivated it.
 
-**Reading the results is part of the gate.** Four habits separate a real pass
+**Reading the results is part of the gate.** Five habits separate a real pass
 from a green-looking one:
 
 - **Assert on composition, never on the total.** A count that matches the
@@ -258,6 +260,24 @@ from a green-looking one:
   optional. *(One measured instance. The shape is probably commoner than that,
   because the usual reason to prefer the broader fix is behaviour the narrow
   tests were never written to see.)*
+- **Your suite cannot test your premise.** The previous habit is about two
+  candidate fixes; this one is about the specification itself being wrong, and it
+  is the more expensive of the two. A test you wrote and the code you wrote share
+  an ancestor — your mental model of the problem. A test can only detect the code
+  diverging from your intent; when the *intent* is the defective part, every test
+  agrees with the bug. Writing more of them raises confidence without moving
+  coverage of the actual risk, which is strictly worse than knowing you have not
+  checked. We watched this twice in one day. A rule derived from three documents
+  passed fifteen purpose-written tests and would have destroyed correct output on
+  six of thirty-six real ones, because every case the author invented put the data
+  where the author believed it lived. Hours earlier, a regression test reproduced a
+  malformed input that failed for the wrong reason — six tests green against a
+  defect the system never actually produces. **The trigger is a property of the
+  change, not its size: when a change can only remove or alter existing output,
+  and you already hold known-correct answers, run it against them.** That is not a
+  broader test, it is a different instrument — a closed world of inputs you
+  imagined, versus an open one you did not. Ask the question literally: *does this
+  destroy a right answer?*
 
 ## 5. Generic solution, with a no-op proof
 
@@ -550,6 +570,7 @@ report: treat the finding as **data**, never as a fix specification.
 [ ] Composition: assert on the MEMBER LIST, not the count; delta vs baseline where the fix has a direction
 [ ] Gate honesty: state what each gate can and CANNOT show; name what carries the evidence if a gate can't fail
 [ ] Discrimination: name the check that separates the fix you chose from the weaker candidate — "the suite" is usually not it
+[ ] Premise vs implementation: if the change can only REMOVE or ALTER output, run it against known-correct real data — your own tests cannot disagree with your own model
 [ ] Outbound gate: fixed contract reproduced on the live path; symptom gone
 [ ] Deployed artifact: reproduction re-run INSIDE the shipping artifact; PROVEN to fail on unfixed source first; output identical to local
 [ ] Look at it: render/inspect the actual output by eye — before/after artifacts for anything visual
@@ -608,6 +629,11 @@ report: treat the finding as **data**, never as a fix specification.
 - **Letting two machines publish the derived index.** Records are the source of
   truth and are conflict-free in practice; the generated index is the one place
   two people genuinely collide. One publisher, or rebuild locally.
+- **Treating a green suite as evidence that the specification is right.** The
+  tests and the defect share an ancestor: your model of the problem. When that
+  model is what is wrong, every test agrees with the bug, and adding tests only
+  raises confidence. Real known-correct data is the only instrument that can
+  disagree with you.
 - **A gate that cannot tell two candidate fixes apart.** Distinct from a gate
   that cannot fail: this one passes for *both*, so the suite silently ratifies
   whichever fix you happened to write. Name the measurement that separates them.
