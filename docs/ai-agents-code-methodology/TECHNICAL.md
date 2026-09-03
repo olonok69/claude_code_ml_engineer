@@ -24,6 +24,17 @@
 > legitimate outcomes (§1); and a new §7 on **sharing the durable trail across
 > machines and people** via object storage, including the machine-identity
 > problem that only appears once an agent can run in more than one role.
+>
+> **This revision** turns to the gates' remaining blind spots and to the *time*
+> dimension of the record. A gate can be sound, run clean, and still fail to
+> distinguish the fix you shipped from a weaker one (§4); an in-artifact check
+> proves nothing until it has been shown to fail on unfixed source (§4). A
+> stated fact about the environment is a hypothesis, not evidence, and the
+> exception handlers between you and a symptom are the first thing to suspect
+> while diagnosing (§2). §6 gains the two dimensions it was missing — **time**,
+> how in-flight state survives a session boundary, and **density**, the index
+> tunable no structural gate can see. §7 gains **least privilege**: the obvious
+> grant on a shared record widens access instead of narrowing it.
 
 ---
 
@@ -140,6 +151,33 @@ Instead:
   sensitivity (move the input away from the threshold, make the boundary
   explicit) — do not "fix" it by re-running until it's green. One green run on
   a non-deterministic system is not a pass.
+- **Verify the premise, not just the steps.** A stated fact about the machine,
+  the environment, or the identity you are running as is a **hypothesis, not
+  evidence** — including one you stated yourself an hour ago. A procedure built
+  on an unverified premise fails in the most expensive way available: every step
+  executes correctly and the result is still wrong, so a trail of green checks
+  points away from the cause. Verify the premise first, and design the check so
+  that it *can actually fail* — a probe returning the same answer whether or not
+  the premise holds has verified nothing. The specific trap for environment and
+  access questions: **an error message describes the request you just made, not
+  the state of the world.** A permission denial can mean the entitlement is
+  absent, or merely that a cached credential expired. Diagnosing from the error
+  text produced three separate wrong conclusions on the same question before
+  anyone queried the authoritative directory directly.
+- **Suspect the exception handlers between you and the symptom.** This is a
+  *debugging heuristic, not a style rule* — handlers are frequently exactly
+  right, and a blanket prohibition is not what the loop needs. But when a defect
+  is invisible, intermittent, or presents as "variance", ask **which handler
+  sits between you and it** before blaming logic or the model. A swallowed error
+  arrives as a plausible value, and a plausible value ends an investigation.
+  Two costs we can measure: a broad catch turned a crash into a
+  degraded-but-successful result and the defect then ran for roughly **ten
+  months** without a single report; and separately, a handler that *did* re-raise
+  still dropped the original cause — so the re-raise preserved the failure and
+  destroyed the only evidence of where it came from. **Re-raising is not enough;
+  preserve the chain.** Having found such a handler, close it one of two ways:
+  fix it, or **accept it in writing** in the durable record. An unrecorded
+  decision to leave it is indistinguishable from not having noticed.
 
 ## 3. Regression vs. pre-existing — prove which, before you own it
 
@@ -158,7 +196,7 @@ regression, both cost more later. Make it a proof, not an assertion.
 
 ## 4. The test battery — layered, RED-first, zero-regression
 
-Four concentric layers, each a real gate:
+Five concentric layers, each a real gate:
 
 1. **Unit** — the decision function / helper in isolation (cheap predicate
    probe from §2).
@@ -177,12 +215,16 @@ Four concentric layers, each a real gate:
    produced. "Tests pass" is a statement about your machine; the deliverable is
    what runs in the artifact. Environment-only defects — a missing locale, a
    font, a native library — are invisible to every earlier layer and show up
-   only here.
+   only here. **And prove the check can fail.** A harness that has only ever
+   run against fixed source is not a gate, it is a screenshot: run it twice —
+   once against the *unfixed* source, where it must reproduce the symptom, and
+   once against the fix, where it must come out clean. The pair is the evidence;
+   the second run alone is not.
 
 Keep each defect's scoped suite as a permanent artifact named for the defect,
 so the next person sees both the guard and the example that motivated it.
 
-**Reading the results is part of the gate.** Three habits separate a real pass
+**Reading the results is part of the gate.** Four habits separate a real pass
 from a green-looking one:
 
 - **Assert on composition, never on the total.** A count that matches the
@@ -204,6 +246,18 @@ from a green-looking one:
   code proves *no regression* and says nothing whatsoever about correctness.
   Reporting it as validation is the most respectable-looking way to ship an
   unverified change.
+- **Ask whether the gate can tell your fix from a weaker one.** A gate that
+  cannot fail is the trap above; the subtler one passes *identically* for two
+  different candidate fixes, so the suite silently ratifies whichever you
+  happened to write. We measured this on one defect: a minimal bounds guard and
+  a bounds-guard-plus-clamp were **byte-identical on every case the unit suite
+  could express**, and only a corpus-scale delta — counting the outputs that
+  *changed* — separated them. Whenever you have chosen between two fix shapes,
+  name the check that distinguishes them; if the honest answer is "none of the
+  tests do", say which measurement does, and make it mandatory rather than
+  optional. *(One measured instance. The shape is probably commoner than that,
+  because the usual reason to prefer the broader fix is behaviour the narrow
+  tests were never written to see.)*
 
 ## 5. Generic solution, with a no-op proof
 
@@ -248,6 +302,41 @@ context's size is a recurring cost, not a one-time one. Architect it:
 - **Persistent memory** follows the same shape: a live snapshot plus an
   open-issues index that explicitly preserves *visibility* of every parked or
   deferred item — lean is not the same as lossy.
+
+Everything above is *spatial* — what sits where, and how big it is. Two further
+dimensions decide whether the architecture holds up in practice.
+
+**Time — the session entry point.** Agent work is interrupted constantly: by
+context limits, by the end of a day, by an urgent unrelated task. The
+always-loaded core describes the *project*, never what you were in the middle
+of, so with nowhere to put in-flight state it stays in the transcript — which is
+precisely what does not survive. Keep **one rolling entry-point document**,
+rewritten (not appended to) at the close of each working session and read first
+at the start of the next. Only what is genuinely in flight earns a place: what
+needs a human specifically, what is yours to build, what is blocked on someone
+else, and — most valuable, most easily lost — **the caveats that would otherwise
+be re-derived expensively or not at all**, such as which single gate is the only
+one that can catch a given error. Two properties matter more than the format. It
+is **one** file, replaced each time, because a folder of dated resume notes
+becomes stale context that reads as current. And it is **deleted or superseded
+on close**, for the same reason. Note what this actually is: a handoff to *your
+own next context*, which happens far more often than §8's handoff to another
+person, and is the one almost nobody writes down. *(Observed over three days of
+deliberate use — enough to be confident in the shape, not in the details.)*
+
+**Density — the index has a tunable, and the structural gate cannot see it.**
+The queryable index described above is built by some process with its own
+parameters: how finely the source is divided before extraction, what threshold
+groups things, how much context each unit carries. **Those parameters decide how
+much of the record survives into the index, and the obvious health check cannot
+detect a bad setting.** We rebuilt ours after a coarser division: the graph came
+out materially thinner and the gate **passed**, because it tests that every node
+is anchored, unique and reachable — properties a small graph satisfies *more*
+easily than a large one. A structural gate measures integrity, never coverage.
+So record the build parameters beside the artifact, treat the previous build's
+node and edge counts as the baseline the next one is compared against, and read
+a drop as a defect to explain rather than a tidier result. *(One rebuild: the
+mechanism generalises, the magnitude is not established.)*
 
 ## 7. Sharing the trail — one record, many machines and people
 
@@ -352,6 +441,27 @@ orientation doc point at that card so every session reads its own role first.
 Keep the card machine-local and out of both version control and the shared
 store — it is the one file that must *not* be the same everywhere.
 
+**Least privilege — and why the obvious grant widens access.** The trail needs
+exactly one capability: read, write and delete on **one** location in the shared
+store. Granting that is the point at which teams reach for whatever role their
+people already hold, and that is the mistake. A role or policy set is typically
+provisioned into **every** environment it is assigned to and applies to **every**
+person holding it — so attaching the write permission to the role you already
+have does not grant access to one location in one environment, it grants it
+everywhere that role exists, production included. The narrow instrument is a
+**dedicated grant scoped to the single location**, attached to that one purpose
+and nothing else.
+
+Two things we got wrong, and would now do first. **Measure the entitlements you
+actually hold before designing the request.** Ours turned out to be considerably
+broader than anyone had asked for — inherited silently through group membership,
+across environments nobody had thought about — and the request we had drafted
+would have widened them further. It was written, reviewed, and never sent.
+**Then ask the authoritative directory, never the tool's error message** (§2).
+When you do file the request, state the *capability and the scope* rather than
+naming a role, and check that a permission you are asking to have removed is not
+the one thing the workflow depends on. Ours very nearly was.
+
 **Before the first shared push.** Scrub the records for embedded secrets.
 Investigation notes are the dangerous case: they often capture signed URLs,
 tokens, or connection strings *on purpose*, as evidence, and those are exactly
@@ -429,7 +539,9 @@ report: treat the finding as **data**, never as a fix specification.
 [ ] Expectation: where does the "expected" value come from? derive it from structure + contract, not from another environment
 [ ] Contract rule: comply / revise / record — pick one explicitly; silence is not an option
 [ ] Provenance: regression or pre-existing? prove it on the pre-change baseline
+[ ] Premise: every stated fact about machine / environment / access verified against the AUTHORITATIVE source, not an error message
 [ ] Root cause: confirmed with a FREE DETERMINISTIC oracle (no paid run yet)
+[ ] Handlers: named the exception handlers sitting between you and the symptom; fixed, or accepted IN WRITING
 [ ] Instrument: probe canaried on a KNOWN-ANSWER case; no try/except wrapping the measurement
 [ ] Plan: options + trade-offs presented; human agreed; rejected options recorded
 [ ] Implement: scoped test RED for the right reason → minimal code → GREEN
@@ -437,14 +549,16 @@ report: treat the finding as **data**, never as a fix specification.
 [ ] Verify: unit + scoped + full regression green; non-determinism = fix the sensitivity, not the variance
 [ ] Composition: assert on the MEMBER LIST, not the count; delta vs baseline where the fix has a direction
 [ ] Gate honesty: state what each gate can and CANNOT show; name what carries the evidence if a gate can't fail
+[ ] Discrimination: name the check that separates the fix you chose from the weaker candidate — "the suite" is usually not it
 [ ] Outbound gate: fixed contract reproduced on the live path; symptom gone
-[ ] Deployed artifact: same reproduction re-run INSIDE the shipping artifact; output identical to local
+[ ] Deployed artifact: reproduction re-run INSIDE the shipping artifact; PROVEN to fail on unfixed source first; output identical to local
 [ ] Look at it: render/inspect the actual output by eye — before/after artifacts for anything visual
 [ ] Document: writeup + ledger update + acceptance criteria + handover (each written ONCE)
 [ ] Sanitise: scan ADDED lines of the staged change for names / IDs / secrets / attribution
 [ ] Hand off: human pushes / opens the change request / deploys — agent does not
 [ ] Automated review: reproduce, measure blast radius, then follow-up commit or dismiss-with-reason
 [ ] Persist: update registries + lean memory; sync the shared trail; codify any reusable lesson into the playbook
+[ ] Continuity: rewrite the single rolling entry-point doc — what is in flight, and the caveats that would be re-derived expensively
 ```
 
 ---
@@ -494,6 +608,25 @@ report: treat the finding as **data**, never as a fix specification.
 - **Letting two machines publish the derived index.** Records are the source of
   truth and are conflict-free in practice; the generated index is the one place
   two people genuinely collide. One publisher, or rebuild locally.
+- **A gate that cannot tell two candidate fixes apart.** Distinct from a gate
+  that cannot fail: this one passes for *both*, so the suite silently ratifies
+  whichever fix you happened to write. Name the measurement that separates them.
+- **An in-artifact check never run against unfixed source.** It has not been
+  shown to fail, so it is a screenshot, not a gate.
+- **Building a procedure on an unverified premise** about the machine, the
+  environment, or the access you hold — and then diagnosing that premise from an
+  error message rather than the authoritative source.
+- **Leaving a suppressed error unrecorded.** Fixing the handler and accepting it
+  are both legitimate; silence is not, and it reads identically to not having
+  noticed.
+- **Keeping in-flight state only in the transcript** — the one part of the
+  session guaranteed not to survive it.
+- **Reading a structural index gate as a coverage gate.** A thinner index passes
+  integrity checks *more* easily than a full one. Compare against the previous
+  build's counts.
+- **Granting the shared record's write access through a role you already hold.**
+  A permission set lands in every environment it is provisioned into; the narrow
+  instrument is a dedicated, single-location grant.
 
 ---
 
