@@ -113,7 +113,7 @@ changes records does not rebuild; they flag it, and the publisher rebuilds. The 
 is deliberately **one file per request**:
 
 ```bash
-kg_refresh.sh request "added the sst-6043 record"   # -> refresh_queue/<utc>-<machine>.request
+kg_refresh.sh request "added the payment-retry record"   # -> refresh_queue/<utc>-<machine>.request
 ./data-push.sh --go
 ```
 
