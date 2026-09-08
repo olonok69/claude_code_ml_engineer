@@ -670,8 +670,10 @@ comparten ese código.
 
 **Dónde se engancha:** en la **etapa 1 (Orientar)** de la metodología — la regla *history-first* del
 `CLAUDE.md` dice **corre `/kg <ticket|tema>` antes de hacer grep** en `data/changes/`. El grafo apunta a
-*qué leer*, no lo sustituye. Y es un **artefacto derivado**: nunca viaja entre máquinas; se reconstruye
-donde esté el corpus (sección 11). Confidencialidad: los nodos llevan nombres internos → el árbol
+*qué leer*, no lo sustituye. Y es un artefacto **mayormente derivado** — ⚠️ con una excepción que costó
+cara: `community_labels.json` (101 nombres escritos a mano) **no se regenera**, y en una reconstrucción
+real sobrevivió **menos del 1%**. "Derivado" es propiedad del **fichero**, no de la carpeta: ese viaja
+siempre, y viaja **emparejado** con el grafo (sección 11). Confidencialidad: los nodos llevan nombres internos → el árbol
 completo vive bajo `data/` gitignored; compartirlo fuera exigiría una pasada de sanitización aparte.
 
 🗣️ *"Un paso semántico en el build, cero LLM en la consulta. El grafo es el mapa; el agente, el guía."*

@@ -600,7 +600,10 @@ nuevo, `kg_refresh.sh bootstrap` instala el tooling que no va en el bundle y fij
 memoria (`~/.claude`) **no** viaja en el delta, `snapshot-memory` la parquea bajo `data/` (para que viaje) y
 `restore-memory` la fusiona de vuelta con backup en la principal, antes de `/kg-refresh`. Punto de entrada
 único para el agente del portátil: `LAPTOP_START_HERE.md` (restaurar → `bootstrap` → seguir igual → mandar
-delta). El grafo es un artefacto **derivado**: nunca viaja de vuelta; se reconstruye donde esté el corpus.
+delta). El **grafo construido** no viaja de vuelta: se reconstruye donde esté el corpus. ⚠️ Pero el
+overlay de nombres curados **sí viaja, y en ambos sentidos** — está escrito a mano dentro del árbol
+generado y no lo regenera nada. Es la corrección de §16: *"derivado" es propiedad del fichero, no de la
+carpeta.*
 
 Guardrails (el landing lo conduce **un agente**, con un `INSTRUCTIONS.md` escrito *para* él): solo
 no-destructivo (renombrar, no borrar; nunca dos ops de movimiento a la vez en un mount Windows); sin
@@ -627,11 +630,13 @@ ticket/PR; moverse degenera en empaquetarlo todo; y cada compañero acaba con **
 
 | Regla | Por qué |
 |---|---|
-| Alcance estrecho: solo `changes/**/*.md` + grafo | Confidencialidad y tamaño. **Nada** de documentos de cliente, fixtures ni binarios sin firma del dueño del bucket. |
+| Alcance **por fases**, cada una revisada | Empezó estrecho (`changes/**/*.md` + grafo) y se ensanchó en cuatro fases hasta el árbol completo, binarios de cliente incluidos — **con la firma del dueño en cada salto**. Ensanchar es fácil; retraer, no. ⚠️ **Cada ampliación es un evento de seguridad**: escanea antes, y **canaria el escáner primero** (un escaneo de 1.141 ficheros dio limpio *y el canario con un secreto plantado también* — un nombre se parseó como opción y abortó el lote en silencio; arreglado, encontró 15 ficheros con URLs firmadas). Y después **reconcilia**: un informe de transferencia limpio solo dice *"lo que me pediste enviar, lo envié"*, nunca *"lo que existe está"*. |
 | **Escribe por sync, lee por mount de solo lectura** | El almacenamiento de objetos no tiene locking ni rename atómico: un mount escribible corrompe y se descubre semanas después. |
 | Dry-run por defecto; `--delete` es opt-in aparte | Un espejo exacto desde una vista local vieja **borra** lo que un compañero acaba de empujar. |
 | Docs = fuente de verdad; el grafo es **derivado** | Los ficheros por ticket casi nunca chocan; el grafo generado es el único punto real de contención → reconstruir en local (`/kg-refresh`) o **un solo publisher**. |
-| Versionado del bucket activado | Red de recuperación, antes del primer accidente y no después. |
+| ⚠️⚠️ **La recuperación CADUCA — y cada uno responde de su trabajo** | El versionado se describe siempre como "la red de seguridad", punto. Es media verdad: casi siempre lleva una regla de ciclo de vida que **expira las versiones no actuales a los 30 días**. Una sobrescritura es recuperable **30 días y solo si alguien se da cuenta**; nadie audita los ficheros de nadie. Dilo literal en el onboarding: *baja antes de editar, sube lo que cambiaste, y si desaparece algo tuyo, dilo dentro del mes o se ha ido.* |
+| **Los ledgers compartidos son de solo-append** | `STATUS.md`, `TICKETS.md`, `FOLLOWUPS.md`… Last-writer-wins sin merge: **reescribir uno borra en silencio la línea de otra persona**, sin conflicto ni error. Añade filas, no reestructures las ajenas. Detectarlo es barato: una línea presente en local y ausente en la copia entrante es borrado deliberado o pisotón → un chequeo en el `pull` que avise casi no tiene falsos positivos. Es la **visibilidad** que el versionado no da: hace la pérdida *recuperable*, no *advertida*. |
+| **En divergencia manda el almacén compartido** | *"Yo lo tengo en local"* deja de ser argumento en cuanto la versión de otro es la publicada. Acuérdalo **antes**: el instinto va al revés, porque tu copia es la que ves. |
 
 **Lo específico de agentes — la máquina tiene rol.** En cuanto el mismo registro es
 alcanzable desde varias máquinas con permisos distintos, la sesión debe saber **dónde está y
