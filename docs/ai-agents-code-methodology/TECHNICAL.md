@@ -125,7 +125,7 @@ Instead:
   resulting attribute error is swallowed and returned as a plausible negative.
   The probe then reports a confident, uniform "no" for every input — and a
   survey built on it reported the right headline for entirely the wrong reason,
-  with all several-hundred inputs reading as negative. Two rules make the
+  with all several-hundred inputs reading as negative. Three rules make the
   shortcut safe:
   1. **Always canary against a known-answer case.** Before you trust a probe on
      unknown inputs, run it on one input whose answer you already know, and
@@ -145,6 +145,27 @@ Instead:
      canary, state in one sentence *what production does to this data* and check
      the canary does that same thing. If you cannot, say the gate is unproven —
      "the test I could build passed" is not "the risk is retired".
+- **A rule that matches nothing looks exactly like a rule that works.** Filters,
+  excludes, guards, allow-lists: when the correct behaviour is *silence*, success
+  and total failure produce identical output. Four such defects were found in a
+  single afternoon on one file — an exclude anchored at the wrong end of the path,
+  another naming a directory that no longer existed under that name, a third that
+  had never been reached — and every one of them had passed review, because the
+  pattern *read* correctly. None was found by inspection. All four were found by
+  running the operation in preview mode and **reading the list of what it actually
+  matched and rejected**. The rule generalises: **never trust a filter you have not
+  seen reject something.** If you cannot point at an item it excluded, you have not
+  tested it, you have only read it.
+- **A check must distinguish "no" from "could not ask."** A coordination lock
+  reported *"nobody holds it"* whenever its read failed — expired credential, no
+  network, denied permission all collapsed into the same reassuring answer, because
+  the failure path defaulted to an empty result. The status command was merely
+  misleading; the *claim* command used the same read, so an expired token would have
+  granted the lock while somebody else held it, which is precisely the collision the
+  lock existed to prevent. **A negative result and a failed measurement must not
+  share an output.** When you write a check, enumerate its failure modes and make
+  every one of them loud; reserve the quiet answer for the case you actually
+  verified.
 - **Rule out logic and configuration before "variance."** "The model is just
   being flaky" is a conclusion of last resort. When a system genuinely is
   non-deterministic, the bug is usually a **sensitivity**, not the variance
@@ -222,6 +243,26 @@ Five concentric layers, each a real gate:
    once against the *unfixed* source, where it must reproduce the symptom, and
    once against the fix, where it must come out clean. The pair is the evidence;
    the second run alone is not.
+
+There is a sixth layer nobody owns, and it is where the expensive failures live:
+**the deployed artifact plus its configuration, together.** Layer 5 proves the artifact
+is right. It does not prove the environment will let it start.
+
+Two properties make this gap invisible. First, code and configuration frequently ship
+through **different repositories with different reviewers and no ordering between them**
+— so "merged" and "working" are separated by however long the second merge takes, and
+nothing in either pipeline knows the other is pending. On one occasion that gap was four
+hours of a downed shared environment; both changes were individually correct. Second,
+the automated post-deploy check answers a *different question* than the one that broke:
+a smoke suite calling the public interface passes cheerfully while a background listener
+crashes at startup on a missing queue name, because nothing in the suite ever reaches
+the listener. It reported green throughout the outage.
+
+So: when a change consumes new configuration, say so explicitly in the handoff, name the
+other repository, and state the required order. Prefer a service that **degrades loudly**
+when its configuration is absent over one that consumes it at startup and dies quietly.
+And when you add a post-deploy check, assert on the component that can actually fail —
+not the one that is easiest to poll.
 
 Keep each defect's scoped suite as a permanent artifact named for the defect,
 so the next person sees both the guard and the example that motivated it.
@@ -489,6 +530,33 @@ the strings you do not want landing in shared storage. Run the sanitisation scan
 from §8 over the whole trail once, not just over a diff, before it leaves the
 machine for the first time.
 
+### Widening the scope of a shared store is a security event
+
+Each time the shared trail grows to cover a new class of content — records, then
+diagnostics, then source material — it crosses a boundary that was never reviewed for
+the new class. Two rules, both learned by nearly shipping the mistake:
+
+**Scan before every widening, and canary the scanner first.** A scan over eleven hundred
+files reported clean. The canary — the same scan against a deliberately planted
+credential — *also* reported clean, so the first result meant nothing: one filename in
+the list had been parsed as a command-line option, aborting the batch, while suppressed
+error output and a zero exit code hid it. Repaired, the same scan found fifteen files
+carrying signed URLs with live-format temporary credentials, captured deliberately as
+evidence in old investigation notes. **The scanner is an instrument and needs its own
+known-answer case**, every time, not once.
+
+**A clean transfer report is not a completeness check.** "What I was asked to send, I
+sent" is all a sync can tell you. It cannot tell you what it was never asked about. Two
+whole directories and thirty source documents were omitted on one widening — the
+documents because the include list was **case-sensitive** and the files used uppercase
+extensions, the directories because nobody had added them to the scope list at all. Both
+transfers reported success, and the follow-up preview reported nothing left to do.
+**After any scope change, reconcile the local inventory against the published one and
+account for every single difference** — including the ones you intend, in writing. The
+differences you can explain are the point; the one you cannot is the finding.
+
+---
+
 ## 8. Handoff — artifacts, sanitisation, role separation
 
 The agent prepares; a human (or human-driven automation) takes every outward
@@ -624,6 +692,18 @@ report: treat the finding as **data**, never as a fix specification.
   and nothing else. Say which is which.
 - **Proving it locally and calling it shipped.** The artifact that runs in the
   target environment is the deliverable; your working tree is not it.
+- **Trusting a rule you have never seen reject anything.** When correct behaviour is
+  silence, a broken rule and a working one are indistinguishable. Read what it matched.
+- **Letting a failed measurement return the same answer as a negative result.** "Nobody
+  holds the lock" and "I could not find out" must never print the same line.
+- **Reading a green deployment pipeline as evidence the service runs.** A smoke suite
+  that exercises the public interface says nothing about a background listener that
+  fails to start. Assert on the thing that broke, not the thing that is easy to poll.
+- **Shipping code and its configuration through separate pipelines with nothing
+  sequencing them.** Each repository is individually correct and the composition is
+  undefined; the gap between the two merges is an outage window nobody is watching.
+  If they must be split, the code must degrade loudly when its configuration is absent
+  — not consume it at startup and die quietly.
 - **A writable shared mount.** Object storage has no locking and no atomic
   rename. Mount read-only, write through an explicit sync.
 - **Letting two machines publish the derived index.** Records are the source of
