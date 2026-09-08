@@ -601,7 +601,10 @@ diff data/changes/STATUS.md.mainbak data/changes/STATUS.md # additions only? kee
 since memory (`~/.claude`) does **not** travel in the delta, `snapshot-memory` parks it under `data/` (so it
 travels) and `restore-memory` merges it back with a backup on the main machine, before `/kg-refresh`. Single
 entry point for the laptop's agent: `LAPTOP_START_HERE.md` (restore → `bootstrap` → carry on as usual → send
-the delta). The graph is a **derived** artifact: it never travels back; it's rebuilt wherever the corpus is.
+the delta). The **built graph** does not travel back: it is rebuilt wherever the corpus is. ⚠️ But the
+curated name overlay **does travel, in both directions** — it is hand-authored inside the generated tree
+and nothing regenerates it. This is §16's correction: *"derived" is a property of the file, not of the
+folder.*
 
 Guardrails (the landing is driven **by an agent**, with an `INSTRUCTIONS.md` written *for* it): only
 non-destructive actions (rename, don't delete; never two move ops at once on a Windows mount); no
@@ -628,11 +631,13 @@ own private index** of the same history. Full runbook:
 
 | Rule | Why |
 |---|---|
-| Narrow scope: only `changes/**/*.md` + the graph | Confidentiality and size. **No** client documents, fixtures or binaries without the bucket owner's sign-off. |
+| Scope grows **in reviewed phases** | It started narrow (`changes/**/*.md` + the graph) and widened over four phases to the whole tree, client binaries included — **with the owner signing off each step**. Widening is easy; retracting is not. ⚠️ **Every widening is a security event**: scan first, and **canary the scanner before you believe it** (a scan over 1,141 files reported clean — *and so did the canary with a planted secret*, because one filename parsed as a command-line option and aborted the batch silently; repaired, it found 15 files carrying signed URLs). Then **reconcile**: a clean transfer report only says *"what I was asked to send, I sent"*, never *"what exists is there"*. |
 | **Write via sync, read via read-only mount** | Object storage has no locking and no atomic rename: a writable mount corrupts, and you find out weeks later. |
 | Dry-run by default; `--delete` is a separate opt-in | An exact mirror from a stale local view **erases** what a teammate just pushed. |
 | Docs = source of truth; the graph is **derived** | Per-task files almost never collide; the generated graph is the only real contention point → rebuild locally (`/kg-refresh`) or have **one publisher**. |
-| Bucket versioning on | The recovery net — turn it on before the first accident, not after. |
+| ⚠️⚠️ **Recovery EXPIRES — and users own their own work** | Versioning is invariably called "the recovery net", full stop. Half-truth: it will almost always carry a lifecycle rule **expiring noncurrent versions after 30 days**. An overwrite is recoverable **for 30 days, and only if somebody notices**; nobody audits anyone else's files. Say it literally in onboarding: *pull before you edit, push what you changed, and if something of yours disappears, say so within the month or it is gone.* |
+| **Shared ledgers are append-only** | `STATUS.md`, `TICKETS.md`, `FOLLOWUPS.md`… Last-writer-wins with no merge: **rewriting one silently drops somebody else's line**, with no conflict and no error. Add rows; never restructure someone else's. Detection is cheap: a line present locally and absent from the incoming copy is either a deliberate deletion or a clobber → a pull-time warning has essentially no false positives. That is the **visibility** versioning does not give you: it makes the loss *recoverable*, not *noticed*. |
+| **The shared store wins on divergence** | *"I have it locally"* stops being an argument once someone else's version is the published one. Agree it **in advance** — the instinct runs the other way, because your copy is the one you can see. |
 
 **The agent-specific part — the machine has a role.** Once the same record is reachable
 from several machines with different permissions, the session must know **where it is and

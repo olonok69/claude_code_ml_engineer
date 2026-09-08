@@ -675,8 +675,10 @@ query**: `kg_query.sh` reads `output/graph.json` directly. Real example: for an 
 
 **Where it hooks in:** at **stage 1 (Orient)** of the methodology — the *history-first* rule in the
 `CLAUDE.md` says **run `/kg <ticket|tema>` before grepping** in `data/changes/`. The graph points to
-*what to read*, it doesn't replace it. And it is a **derived artifact**: it never travels between
-machines; it is rebuilt wherever the corpus is (section 11). Confidentiality: the nodes carry internal
+*what to read*, it doesn't replace it. And it is a **mostly derived** artifact — ⚠️ with one exception
+that proved expensive: `community_labels.json` (101 hand-authored names) **is not regenerated**, and on
+a real rebuild **under 1% survived**. "Derived" is a property of the **file**, not of the folder: that
+one always travels, and it travels **paired** with the graph (section 11). Confidentiality: the nodes carry internal
 names → the whole tree lives under gitignored `data/`; sharing it externally would require a separate
 sanitization pass.
 
