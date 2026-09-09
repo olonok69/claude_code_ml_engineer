@@ -381,9 +381,11 @@ Chained by **gates** (the coral boxes in the diagram); a red gate is a STOP = *w
 4. **Investigate** — **deterministic oracle** (parser/validator) first; the LLM is reserved for verifying.
 5. **Plan** — propose options + trade-offs; explicit **human agreement** before touching code.
 6. **Implement** — TDD: RED (for the right reason) → GREEN, minimal change.
-7. **Verify** — unit + scoped + regression + **outbound gate** (three checks): reproduce the contract at the
-   **real output stage** (the *wrapper* that rebuilds the output, not an internal function), have the local
-   JSON match, and verify it **inside the deployed image** — green tests don't prove what gets shipped.
+7. **Verify** — unit + scoped + regression + **outbound gate** (five checks): **(0) validate the measuring
+   instrument** against a known-answer case before trusting it; (1) reproduce the contract at the **real
+   output stage** (the *wrapper* that rebuilds the output, not an internal function); (2) have the local
+   JSON match — verified **on the member list, never on a total**; (3) verify it **inside the deployed
+   image**; (4) **look** at the rendered output before the PR. Green tests don't prove what gets shipped.
 8. **Document** — why + what + handover + acceptance criteria, each thing **once**.
 9. **Sanitize** — scan the **added lines** for names/IDs/secrets/agent attribution.
 10. **Handoff** — the human (or a tool of theirs, e.g. Cursor) does push/PR/deploy. The agent **never**.
@@ -395,6 +397,17 @@ Chained by **gates** (the coral boxes in the diagram); a red gate is a STOP = *w
 > the cost, it **concentrates** it: cheap in 1–3 and 9 (reading facts + deciding), **expensive in 5–6–7**
 > (plan, code, verify), where the model *thinks and creates*. Cost-per-stage table:
 > [`metodologia/WORKFLOW.md`](./ejemplos/metodologia/WORKFLOW.md).
+
+> **The weak point turned out to be the gate, not the fix.** Three ways a green proves nothing, all three
+> real: **(a)** a **broken instrument** — bypassing the constructor to probe a predicate leaves attributes
+> unset; if the method reads them and has its own `try/except`, the error comes back as a plausible `False`
+> and the probe reports a uniform "no" for *every* case; **(b)** a **total that matches** — one item wrongly
+> added and one wrongly dropped cancel out, so assert on the **list** (titles/ids), not on `len(...)`; the
+> closer the number lands to the expected one, the **more** suspicious it is; **(c)** a **gate that couldn't
+> fail** — if the reference corpus holds no example of the shape you touched, the clean run proves
+> *no-regression and nothing else* (real case: a detector firing on **0 of 190** documents: `fires=0` reads
+> the same whether the code is right or completely broken). Always state what each gate **can** and
+> **cannot** show.
 
 ### A real example (see [`metodologia/EJEMPLO_REAL.md`](./ejemplos/metodologia/EJEMPLO_REAL.md))
 Bug: *"a field shows up empty in the UI but it's in the PDF."* → Orient (STATUS.md finds a
@@ -537,7 +550,36 @@ just for code:
   it back (with backup) before `/kg-refresh`. A `LAPTOP_START_HERE.md` is the single entry point for the
   laptop's agent.
 
+**And the next step: from *transporting* to *sharing* (S3).** The tarball solves moving the workspace
+between **your** machines. It does not solve a **team** working off the same record. Add a third
+machine and a second person and three costs appear: the record is gitignored → it **can't be linked**
+from a ticket or a PR; moving degenerates into archiving everything; and each person ends up with
+**their own private index** of the same history. Runbook:
+[`docs/synchro/s3-sync/README.md`](./docs/synchro/s3-sync/README.md).
+
+- **Deliberately narrow scope:** engineering docs + the graph only. **No** client documents, fixtures
+  or binaries without the bucket owner's sign-off — it is both a confidentiality line and a size line,
+  and widening later is easy while retracting is not.
+- **Write via sync, read via a read-only mount.** Object storage has **no** locking and no atomic
+  rename: a writable mount isn't a convenience, it's corruption you discover weeks later. Read-only is
+  the safety property, not a limitation to work around.
+- **The destructive direction is opt-in:** dry-run by default, explicit `--go`, and `--delete`
+  separately — because the normal case is a teammate pushing at the same time, and an exact mirror
+  from a stale view **erases their work**.
+- **Docs are the source of truth; the graph is derived.** Per-task files almost never collide (people
+  work on different tasks); the generated graph is the **only** real contention point → either rebuild
+  it locally, or have exactly **one** machine publish it.
+- **The agent-specific part — the machine has a role.** This only shows up once the same record is
+  reachable from several machines with different permissions, and it's the easiest thing to forget:
+  the session has to know **where it is and what it may do** *before* acting. Otherwise a *contributor*
+  machine will republish the shared graph — the one thing it must not do — and report it as a job well
+  done. Each machine declares a name and a role, generates a **machine-local** `IDENTITY.md` with live
+  checks, and `CLAUDE.md` points at it: every session reads its own role first.
+
 🗣️ *"The methodology isn't just for code: durable memory, guardrails, and 'the human owns external actions' — in ops too."*
+
+🗣️ *"And when the durable trail goes from one machine to a team, a new question appears that didn't
+exist before: the agent has to know which machine it's on before it acts."*
 
 ---
 
@@ -633,8 +675,10 @@ query**: `kg_query.sh` reads `output/graph.json` directly. Real example: for an 
 
 **Where it hooks in:** at **stage 1 (Orient)** of the methodology — the *history-first* rule in the
 `CLAUDE.md` says **run `/kg <ticket|tema>` before grepping** in `data/changes/`. The graph points to
-*what to read*, it doesn't replace it. And it is a **derived artifact**: it never travels between
-machines; it is rebuilt wherever the corpus is (section 11). Confidentiality: the nodes carry internal
+*what to read*, it doesn't replace it. And it is a **mostly derived** artifact — ⚠️ with one exception
+that proved expensive: `community_labels.json` (101 hand-authored names) **is not regenerated**, and on
+a real rebuild **under 1% survived**. "Derived" is a property of the **file**, not of the folder: that
+one always travels, and it travels **paired** with the graph (section 11). Confidentiality: the nodes carry internal
 names → the whole tree lives under gitignored `data/`; sharing it externally would require a separate
 sanitization pass.
 

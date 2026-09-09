@@ -43,6 +43,59 @@ MONO     = "Consolas"
 
 EMU_W, EMU_H = Inches(13.333), Inches(7.5)
 
+# ----------------------------------------------------------------------------- idioma
+# El deck se dibuja SIEMPRE en castellano; `--lang en` traduce línea a línea al
+# emitir, usando presentacion/translations_en.py. Así hay UN solo layout que
+# mantener: añadir una slide la añade en los dos idiomas, y lo único que puede
+# faltar es su traducción (que se reporta al final, no se traga en silencio).
+LANG = "es"
+_MISSES: list[str] = []
+_SOFT: list[str] = []
+
+
+def _translate(para):
+    """para: lista de tuplas R(). Devuelve la versión traducida si LANG != es."""
+    if LANG == "es":
+        return para
+    import sys
+
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from translations_en import TRANSLATIONS
+
+    key = "".join(t for (t, *_rest) in para)
+    if not key.strip():
+        return para
+    en = TRANSLATIONS.get(key)
+    if en is None:
+        # Solo interesa avisar de prosa: el código, las URLs y los nombres propios
+        # pasan tal cual a propósito.
+        if any(ch.isalpha() for ch in key) and len(key) > 3:
+            _MISSES.append(key)
+        return para
+    if len(en) != len(para):
+        # Los decks se re-guardaron en PowerPoint, que FUSIONA runs adyacentes con el
+        # mismo formato: una línea que aquí se emite en 5 runs puede estar en el deck
+        # como 1. Se conservan los runs iniciales que coinciden literalmente (marcadores
+        # tipo "▸  " o "■ ", idénticos en ambos idiomas) y el resto se junta en el
+        # siguiente run — así no se pierde texto y el marcador mantiene su color.
+        keep = 0
+        while keep < min(len(en), len(para)) and en[keep] == para[keep][0]:
+            keep += 1
+        merged = "".join(en[keep:])
+        out = []
+        for i, (t, *rest) in enumerate(para):
+            if i < keep:
+                out.append((en[i], *rest))
+            elif i == keep:
+                out.append((merged, *rest))
+            else:
+                out.append(("", *rest))
+        _SOFT.append(f"[runs {len(para)}<-{len(en)}, merged at {keep}] {key[:70]}")
+        return out
+    return [(en[i], *rest) for i, (t, *rest) in enumerate(para)]
+
 
 # ----------------------------------------------------------------------------- helpers
 def _solid(shape, color):
@@ -90,6 +143,7 @@ def text(slide, x, y, w, h, runs, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP,
     tf.vertical_anchor = anchor
     tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
     for i, para in enumerate(runs):
+        para = _translate(para)
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.alignment = align
         p.space_after = Pt(space_after)
@@ -601,7 +655,8 @@ def build():
     divider(s, 2, "La metodología",
             "Agnóstica de la herramienta: se demuestra con Claude Code, pero la disciplina viaja.",
             ["08 · El flujo de 11 etapas + ejemplo real", "09 · Las herramientas del método",
-             "10 · Transferir a otro agente (Copilot)", "11 · Sincronización de máquinas"], page=pg)
+             "10 · Transferir a otro agente (Copilot)",
+             "11 · Sincronizar máquinas: transportar y compartir (S3)"], page=pg)
 
     # ---- 21. Principio
     s, pg = new()
@@ -632,7 +687,7 @@ def build():
         ("4", "Investigar: oráculo determinista barato", False),
         ("5", "Plan → acuerdo humano explícito", True),
         ("6", "Implementar: TDD RED → GREEN, mínimo", False),
-        ("7", "Verificar: contrato (wrapper) + imagen desplegada", True),
+        ("7", "Verificar: 5 checks (instrumento → contrato → imagen)", True),
         ("8", "Documentar — cada cosa una vez", False),
         ("9", "Sanitizar — líneas añadidas", False),
         ("10", "Handoff: el humano hace push / PR", False),
@@ -650,9 +705,11 @@ def build():
         text(s, x + 0.14, y + 0.11, 0.34, 0.34,
              [[R(n, 11, BG if gate else TEXT, True)]], align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         text(s, x + 0.62, y + 0.06, 5.1, 0.46, [[R(label, 11.5, TEXT, False)]], anchor=MSO_ANCHOR.MIDDLE)
-    text(s, 0.7, 6.02, 11.95, 0.3,
-         [[R("■ ", 11, CORAL, True), R("Los recuadros coral son GATES (puntos de decisión). "
-           "Un gate rojo = STOP: no escribir código.", 11, MUTED, False)]])
+    text(s, 0.7, 5.99, 11.95, 0.34,
+         [[R("■ ", 10.5, CORAL, True), R("Coral = GATE (STOP: no escribir código).   ", 10.5, MUTED, False),
+           R("Etapa 7, los 5 checks: ", 10.5, TEXT, True),
+           R("instrumento · contrato (wrapper) · miembros, no totales · imagen · mirar",
+             10.5, MUTED, False)]])
     takeaway(s, "El agente orquesta y es donde vive la inferencia; lo caro se concentra en plan/código/verify, no en buscar.")
 
     # ---- 23. Ejemplo real
@@ -820,9 +877,9 @@ def build():
                   accent=CORAL)
     takeaway(s, "Si solo conservas cinco reglas, conserva esas cinco. Las tools se sustituyen; la disciplina viaja.")
 
-    # ---- Machine sync
+    # ---- Machine sync (A: transportar)
     s, pg = new()
-    base(s, "Parte 2 · 11 · Ops", "Un runbook real: sincronizar máquinas", page=pg)
+    base(s, "Parte 2 · 11 · Ops", "Sincronizar máquinas (A): transportar", page=pg)
     panel_bullets(s, 0.7, 2.0, 5.85, 2.7, "Outbound — copia completa",
                   ["Un tarball: workspace + ~/.claude · .aws · .ssh",
                    "-h dereferencia el symlink de .aws (crítico)",
@@ -839,6 +896,31 @@ def build():
                    "El humano hace push / merge; el agente prepara y reporta con evidencia (conteos, PRs)"],
                   accent=CORAL)
     takeaway(s, "La metodología no es solo para código: memoria durable, guardrails y 'el humano hace lo externo' también en ops.")
+
+    # ---- Machine sync (B: compartir sobre S3)
+    s, pg = new()
+    base(s, "Parte 2 · 11 · Ops", "Sincronizar máquinas (B): compartir sobre S3", page=pg)
+    text(s, 0.7, 1.92, 11.95, 0.42,
+         [[R("El tarball resuelve ", 12, MUTED, False), R("transportar", 12, TEXT, True),
+           R(" entre TUS máquinas. No resuelve ", 12, MUTED, False), R("compartir", 12, TEXT, True),
+           R(": el registro es gitignored → no se puede enlazar desde un ticket, y cada persona "
+             "acaba con su propio índice privado de la misma historia.", 12, MUTED, False)]],
+         line_spacing=1.05)
+    panel_bullets(s, 0.7, 2.52, 5.85, 2.25, "Las reglas que lo hacen seguro",
+                  ["Alcance estrecho: docs + grafo. Nada de datos de cliente",
+                   "Escribe por sync · lee por mount de SOLO LECTURA",
+                   "Dry-run por defecto; --go explícito; --delete aparte",
+                   "Versionado del bucket = red de recuperación"], accent=BLUE)
+    panel_bullets(s, 6.8, 2.52, 5.85, 2.25, "Fuente de verdad vs. derivado",
+                  ["Los docs mandan; el grafo se DERIVA de ellos",
+                   "Los ficheros por ticket casi nunca chocan",
+                   "El grafo es el único punto real de contención",
+                   "→ UN solo publisher. \"Derivado\" es del fichero, no de la carpeta"], accent=GREEN)
+    panel_bullets(s, 0.7, 4.89, 11.95, 1.32, "Lo específico de los agentes: la máquina tiene rol",
+                  ["Varias máquinas, permisos distintos → la sesión debe saber DÓNDE está antes de actuar",
+                   "MACHINE_NAME / MACHINE_ROLE → IDENTITY.md (machine-local) ← CLAUDE.md apunta a él"],
+                  accent=CORAL)
+    takeaway(s, "Un mount escribible sobre almacenamiento de objetos no es una comodidad: es corrupción que descubres semanas después.")
 
     # =========================================================================
     # PARTE 3 — EL GRAFO DE CONOCIMIENTO DE TICKETS (GRAPHIFY)
@@ -937,7 +1019,7 @@ def build():
            R("→ la zona de peligro completa al instante: los 5-6 tickets que comparten ese código.",
              11.5, MUTED, False)]], line_spacing=1.1)
     panel_bullets(s, 0.7, 5.2, 11.95, 1.0, "Honestidad y ciclo de vida",
-                  ["Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado: nunca viaja, se reconstruye"],
+                  ["Recall en zonas densas · EXTRACTED = fiable, INFERRED = pista · interno (data/) · derivado se reconstruye, pero lo escrito a mano viaja"],
                   accent=BLUE)
     takeaway(s, "Un paso semántico en el build, cero LLM en la consulta. El grafo es el mapa; el agente, el guía.")
 
@@ -976,11 +1058,28 @@ def build():
          [[R("Referencias:  code.claude.com/docs  ·  github.com/tomascortereal/claude-code-setup  ·  "
              "colbymchenry.github.io/codegraph  ·  github.com/oraios/serena", 11, FAINT, False)]])
 
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Claude_Code_Presentacion.pptx")
+    name = "Claude_Code_Presentacion.pptx" if LANG == "es" else f"Claude_Code_Presentacion_{LANG.upper()}.pptx"
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
     prs.save(out)
-    print(f"OK  ->  {out}  ({len(prs.slides._sldIdLst)} slides)")
+    print(f"OK  ->  {out}  ({len(prs.slides._sldIdLst)} slides, lang={LANG})")
+    if _SOFT:
+        print(f"\n  {len(set(_SOFT))} line(s) re-joined (run split differs; text intact):")
+        for k in sorted(set(_SOFT)):
+            print(f"    ~ {k[:100]}")
+    if _MISSES:
+        uniq = sorted(set(_MISSES))
+        print(f"\n  {len(uniq)} line(s) with NO translation — they shipped in Spanish:")
+        for k in uniq:
+            print(f"    - {k[:100]}")
+        print("  Add them to presentacion/translations_en.py and re-run.")
     return out
 
 
 if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Genera el deck del curso.")
+    ap.add_argument("--lang", choices=("es", "en"), default="es",
+                    help="es (por defecto) o en; 'en' traduce vía translations_en.py")
+    LANG = ap.parse_args().lang
     build()
