@@ -123,6 +123,36 @@ one-file-per-request needs no coordination whatsoever. The publisher runs
 `kg_refresh.sh queue` before rebuilding and `queue --clear` after the health check
 passes.
 
+> ⚠️⚠️ **Three things this loop got wrong the first time it was actually run** — it had been
+> documented and taught for weeks without anyone executing it end to end. Each is a general
+> hazard, not a quirk of these scripts:
+>
+> 1. **The queue lived inside the guarded folder.** `refresh_queue/` sits under the
+>    knowledge-graph directory, and the publisher-only guard was — correctly — scoped to that
+>    directory. Result: a contributor could file a request that silently never left their
+>    machine. **Before gating a path, enumerate what else is under it.** Coordination data and
+>    published data end up sharing a parent far more often than anyone intends. The guard must
+>    exempt the queue, and nothing else in that folder.
+> 2. **`queue --clear` only moved the file locally.** A per-file sync without deletion leaves
+>    the original in the store, so the next pull resurrects the request on *every* machine and
+>    the queue is never actually empty. The clear step has to remove **exactly the keys it
+>    consumed**, by name — never the mirror-delete flag, which is a whole-tree operation and
+>    the one command contributors are told never to run.
+> 3. **A pull deletes nothing locally.** The requester's own copy outlives the request being
+>    actioned, so it is re-uploaded on every later push and reads as pending to anyone listing
+>    the prefix. Reconcile against the consumed receipt rather than trusting either side's
+>    file listing.
+>
+> **Corollary that bites outside this loop:** *"pull before you edit"* is unsafe when you have
+> unpushed work — the same no-delete-on-pull behaviour will overwrite your local change with
+> the store's older copy and resurrect files you deliberately deleted. Dry-run the pull and
+> read what it intends to overwrite before applying it.
+>
+> **Simulate the role before onboarding anyone into it.** A distinct machine identity plus an
+> empty local tree exercises the real scripts safely — a run that wrongly succeeds uploads
+> nothing. That is what turned these four latent failures into an afternoon rather than a new
+> joiner's first week.
+
 > **Treat the single publisher as scaffolding, not architecture.** Pinning the rebuild
 > to one person's machine stalls the moment that machine is off, travelling, or
 > mid-task. The queue above is deliberately the *trigger contract*, so the rebuild can

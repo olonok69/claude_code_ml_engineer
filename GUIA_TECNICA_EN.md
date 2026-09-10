@@ -654,6 +654,37 @@ gitignored, never synced, never packaged.
 > evidence of a bug, and those are exactly the strings you don't want in shared storage. Run
 > the sanitisation scan over the **whole** record, not over a diff.
 
+> ⚠️⚠️ **A role that exists only in documentation is untested code.** We wrote the
+> `contributor` role down, reviewed it and taught it for weeks. The first time anyone
+> actually ran it, it did not work: the baton guard gated the **whole** sync, so a
+> contributor could not push their own ticket folders at all. Fixing that revealed three
+> more, each behind the last — (1) the request queue lived *inside* the guarded folder, so
+> filed requests silently never left the machine; (2) marking a request consumed moved the
+> file **locally only**, and a sync without deletion left the original in the store, so the
+> next pull resurrected it on every machine; (3) the requester's own copy is never removed
+> by a pull, so consumed requests were re-uploaded forever and read as pending to anyone
+> listing the prefix. None was visible by reading the code.
+>
+> **Two rules follow.** First, **before gating a path, enumerate what else lives under it** —
+> coordination data and published data share a parent far more often than anyone intends.
+> Second, **"pull before you edit" is unsafe advice when you have unpushed work**: the same
+> no-delete-on-pull behaviour overwrites your local change with the store's older copy and
+> resurrects files you deliberately deleted. Dry-run the pull and read what it intends to
+> overwrite.
+>
+> **The practice that catches all of this is cheap: simulate the role before onboarding into
+> it.** A distinct machine identity plus an empty local tree exercises the real scripts
+> safely — a run that wrongly succeeds uploads nothing. That substitution turned four latent
+> failures into an afternoon instead of a new joiner's first week.
+
+> **Budget for the judgement a rebuild costs, not just the compute.** Where a shared artifact
+> carries hand-authored labels over a generated structure, measure how many survive a
+> rebuild before assuming naming is a one-off. Ours carried **48%** across one rebuild and
+> **37%** across the next — on identifiers deliberately pinned to make them stable. The
+> pinning fixed deduplication *within* a run and did nothing for continuity *between* runs.
+> Re-labelling is a recurring cost of every refresh; a half-labelled artifact passes no
+> health check and helps nobody.
+
 ---
 
 # PART 3 — The ticket knowledge graph (graphify)
