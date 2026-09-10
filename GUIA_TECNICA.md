@@ -653,6 +653,39 @@ nunca sincronizado, nunca empaquetado.
 > como evidencia de un bug, y son exactamente las cadenas que no quieres en almacenamiento
 > compartido. Pasar el escáner de sanitización sobre **todo** el registro, no sobre un diff.
 
+> ⚠️⚠️ **Un rol que solo existe en la documentación es código sin probar.** Escribimos el rol
+> `contributor`, lo revisamos y lo enseñamos durante semanas. La primera vez que alguien lo
+> ejecutó de verdad, no funcionaba: el guard del testigo bloqueaba el sync **entero**, así que
+> un contributor no podía ni subir sus propias carpetas de ticket. Arreglarlo destapó tres
+> fallos más, cada uno detrás del anterior — (1) la cola de peticiones vivía *dentro* de la
+> carpeta protegida, así que las peticiones no salían nunca de la máquina, en silencio;
+> (2) marcar una petición como consumida movía el fichero **solo en local**, y un sync sin
+> borrado dejaba el original en el almacén, así que el siguiente pull lo resucitaba en todas
+> las máquinas; (3) la copia del propio solicitante no la borra ningún pull, así que las
+> peticiones consumidas se volvían a subir para siempre y se leían como pendientes. Ninguno
+> era visible leyendo el código.
+>
+> **De ahí salen dos reglas.** Primera: **antes de proteger una ruta, enumera qué más vive
+> debajo** — los datos de coordinación y los publicados comparten padre mucho más a menudo de
+> lo que nadie pretende. Segunda: **"baja antes de editar" es un consejo peligroso si tienes
+> trabajo sin subir**: ese mismo "el pull no borra" sobrescribe tu cambio local con la copia
+> vieja del almacén y resucita ficheros que borraste a propósito. Haz el pull en dry-run y lee
+> qué pretende sobrescribir.
+>
+> **La práctica que caza todo esto es barata: simula el rol antes de dar de alta a nadie en
+> él.** Una identidad de máquina distinta y un árbol local vacío ejercitan los scripts reales
+> sin riesgo — una ejecución que acierte por error no sube nada. Ese cambio convirtió cuatro
+> fallos latentes en una tarde de trabajo en vez de en la primera semana de alguien nuevo.
+
+> **Presupuesta el juicio que cuesta un rebuild, no solo el cómputo.** Cuando un artefacto
+> compartido lleva etiquetas escritas a mano sobre una estructura generada, mide cuántas
+> sobreviven a un rebuild antes de dar por hecho que nombrar es un coste único. Las nuestras
+> aguantaron un **48%** en un rebuild y un **37%** en el siguiente — sobre identificadores
+> fijados a propósito para que fueran estables. El pinning arregló la deduplicación *dentro*
+> de una ejecución y no hizo nada por la continuidad *entre* ejecuciones. Reetiquetar es un
+> coste recurrente de cada refresh; un artefacto a medio etiquetar no pasa ningún gate y no
+> le sirve a nadie.
+
 ---
 
 # PARTE 3 — El grafo de conocimiento de tickets (graphify)
