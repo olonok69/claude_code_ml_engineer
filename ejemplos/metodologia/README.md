@@ -10,6 +10,7 @@ secretos); las herramientas, gates y organización son los reales.
 | [`EJEMPLO_REAL.md`](./EJEMPLO_REAL.md) | **Un caso concreto de principio a fin** (un bug de "campo vacío") por las 11 etapas. |
 | [`herramientas.md`](./herramientas.md) | Prevalencia de tools: qué usa Claude y cuándo (Serena, CodeGraph, Playwright, AWS CLI, oráculo determinista). |
 | [`machine-sync.md`](./machine-sync.md) | **Un runbook real de ops**: sincronizar el workspace entre máquinas (copia completa vs. delta), aterrizado por un agente con guardrails. Incluye bring-up desde cero (`bootstrap`) y round-trip de memoria (`snapshot`/`restore`) para el grafo `/kg`. |
+| [`s3-sync/`](./s3-sync/) | **Los scripts reales del registro compartido sobre S3**, genericizados: pull/push con dry-run por defecto, guardia en AMBAS direcciones, ledger append-only por máquina, baton de publisher único. Empieza por `config.env.example` — ahí está el diseño. |
 | [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md) | El **grafo de tickets** (`/kg`, con **graphify**): CodeGraph pero para tickets/lecciones — la capa de orientación de la etapa 1. |
 | [`flow.png`](./flow.png) | El diagrama del flujo, renderizado (gates en coral, la rama roja es STOP). |
 | [`flow.mmd`](./flow.mmd) · [`render_flow.py`](./render_flow.py) | Fuente editable (Mermaid) y el script que genera `flow.png` (`python render_flow.py`). |
