@@ -235,6 +235,37 @@ clobber — so a pull-time check that diffs the two and warns has essentially no
 positives. A few lines of shell, not a merge engine. That check is the visibility that
 versioning does not give you: versioning makes the loss *recoverable*, not *noticed*.
 
+⚠️⚠️ **That check covers one direction, and the damage happens in the other.** We built it, it runs
+on every pull, and work was still destroyed. Measured: two machines edited the status ledger the
+same afternoon; the second push at 17:46 replaced the first from 17:42 wholesale — **11 lines gone,
+no conflict, no error.** A pull-time check cannot see this, because the loss occurs while *pushing*,
+against a copy the pusher never had.
+
+Put plainly: **a pull clobbers you, and you can be made to notice. A push clobbers your colleague,
+and you cannot** — the evidence sits on a machine you never look at. Ours went a full day
+unobserved, and was recovered only because bucket versioning happened to be on.
+
+So guard the push as well. Before uploading a shared file, compare the stored copy's last-modified
+time against the last real sync this machine recorded, and if the store has moved since, **refuse**
+— name the files, print both timestamps, and stop. Do not merely warn: a warning inside a 60-line
+transfer preview is exactly the thing that gets scrolled past. Provide an override, document it, and
+document the reason not to use it in the same breath.
+
+Two refinements that turned out to matter more than the check itself:
+
+- **Compare content, not just timestamps.** The first version would have refused a teammate's very
+  first push after upgrading, on files he had just pulled and held byte-for-byte, because his log
+  had no real pull recorded yet. Ask the question that matters — *would this upload actually change
+  the stored object?* **A guard's false-positive rate is a safety property**: every spurious refusal
+  spends credibility, and the override people learn to reach for is the one that causes the
+  incident.
+- **A per-machine file needs exactly one writer, enforced in the tool.** Splitting the sync log into
+  one file per machine removes contention by design — and our push uploaded *every* machine's file,
+  including its permanently-stale copy of someone else's, rolling that person's record back. The
+  first symptom was not a corrupt file: with his log erased, the dashboard said he had never closed
+  his day. He had. **Before concluding a teammate skipped a process step, check whether your own
+  tooling ate the evidence.**
+
 ### Per-task folders need no coordination at all
 
 The reason this model works without locking is that the bulk of the corpus is partitioned

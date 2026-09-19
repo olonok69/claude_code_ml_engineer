@@ -910,7 +910,7 @@ def build():
                   ["Alcance estrecho: docs + grafo. Nada de datos de cliente",
                    "Escribe por sync · lee por mount de SOLO LECTURA",
                    "Dry-run por defecto; --go explícito; --delete aparte",
-                   "Versionado del bucket = red de recuperación"], accent=BLUE)
+                   "Versionado = 30 días, no merge · protege pull Y push"], accent=BLUE)
     panel_bullets(s, 6.8, 2.52, 5.85, 2.25, "Fuente de verdad vs. derivado",
                   ["Los docs mandan; el grafo se DERIVA de ellos",
                    "Los ficheros por ticket casi nunca chocan",

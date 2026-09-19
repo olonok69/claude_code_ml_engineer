@@ -1260,8 +1260,8 @@ TRANSLATIONS.update({
         ("▸  ", "Write via sync · read via READ-ONLY mount"),
     "▸  Dry-run por defecto; --go explícito; --delete aparte":
         ("▸  ", "Dry-run by default; explicit --go; --delete separate"),
-    "▸  Versionado del bucket = red de recuperación":
-        ("▸  ", "Bucket versioning = recovery net"),
+    "▸  Versionado = 30 días, no merge · protege pull Y push":
+        ("▸  ", "Versioning = 30 days, not a merge · guard pull AND push"),
     "▸  Los docs mandan; el grafo se DERIVA de ellos":
         ("▸  ", "Docs rule; the graph is DERIVED from them"),
     "▸  Los ficheros por ticket casi nunca chocan":
