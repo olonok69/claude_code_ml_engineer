@@ -189,14 +189,18 @@ modelo de operación. El modelo importa más que la tecnología:
 
 | Regla | Por qué |
 |---|---|
-| **Alcance estrecho**: solo `changes/**/*.md` + el grafo | Confidencialidad y tamaño. Ensanchar después es fácil; retraer, no. |
+| Alcance **por fases**, cada una revisada | Empezó estrecho (`changes/**/*.md` + grafo) y se ensanchó en fases revisadas — **con la firma del dueño en cada salto**. Ensanchar es fácil; retraer, no. ⚠️ **Cada ampliación es un evento de seguridad**: escanea antes, y **canaria el escáner primero**; después **reconcilia** (un informe limpio solo dice *"lo que me pediste enviar, lo envié"*). |
 | **Escribe por sync, lee por mount de solo lectura** | El almacenamiento de objetos **no** tiene locking ni rename atómico. Un mount escribible invita a corrupción que aparece semanas después. |
 | **Dry-run por defecto**, `--go` explícito; `--delete` aparte | El caso normal es que un compañero esté empujando a la vez; un espejo exacto desde una vista local vieja **borra su trabajo**. |
 | **Los docs son la fuente de verdad; el grafo es derivado** | Los ficheros por ticket casi nunca chocan. El grafo generado es el **único** punto real de contención → lo publica **una** máquina. ⚠️ "Reconstruir en local" solo vale si el árbol generado es *puramente* derivado — ver la nota de abajo. |
-| **"Derivado" es del fichero, no de la carpeta** | Dentro del árbol generado vive un fichero **escrito a mano** (los nombres curados de las comunidades) que no lo regenera nada: al reconstruir sobrevivió **<1%**. Clasifica por fichero — *fuente* / *derivado* / *escrito a mano dentro del derivado* — y trata el tercero como fuente. |
+| **"Derivado" es del fichero, no de la carpeta** | Dentro del árbol generado vive un fichero **escrito a mano** (los nombres curados de las comunidades) que no lo regenera nada: al reconstruir sobrevivió **menos del 1%**. Clasifica por fichero — *fuente* / *derivado* / *escrito a mano dentro del derivado* — y trata el tercero como fuente. |
 | **Los pares viajan juntos** | El overlay de nombres solo vale contra el grafo del que salió, pero el sync compara **objeto a objeto** → grafo nuevo + nombres viejos = nombres pegados a la comunidad equivocada, **sin error**. Sella el overlay con una **huella del grafo** y que el chequeo falle en ruidoso. |
 | **Coordinar sin locks** | Para pedir un rebuild, cada contribuidor escribe **su propio fichero** en una cola (`refresh_queue/<utc>-<máquina>.request`). Claves distintas nunca colisionan; un fichero de cola compartido se perdería por last-writer-wins. Es además el mismo contrato que consumirá un job programado. |
+| ⚠️⚠️ **La recuperación CADUCA — y cada uno responde de su trabajo** | El versionado casi siempre **expira las versiones no actuales a los 30 días**. Recuperable **30 días y solo si alguien se da cuenta**. Onboarding literal: *baja antes de editar, sube lo que cambiaste, y si desaparece algo tuyo, dilo dentro del mes o se ha ido.* |
+| **Los ledgers compartidos son de solo-append** | Last-writer-wins sin merge: **reescribir uno borra en silencio la línea de otra persona**. Añade filas; no reestructures las ajenas. Un aviso en el `pull` casi no tiene falsos positivos — es la **visibilidad** que el versionado no da. ⚠️⚠️ **Protege AMBAS direcciones**: ese chequeo cubre el pull; el daño ocurre en el **push** (`exit 4` / `REFUSED`; no uses `--allow-clobber` a la ligera). |
+| **En divergencia manda el almacén compartido** | *"Yo lo tengo en local"* deja de ser argumento cuando la versión de otro es la publicada. Acuérdalo **antes**. |
 | **Cada máquina declara su identidad** | Ver abajo: es lo específico de trabajar con agentes. |
+| **Hábito = skill `day` + scripts** | "Pull al empezar / push al terminar" necesita una rutina invocable, no un párrafo: [`../skills-plugins/.claude/skills/day/`](../skills-plugins/.claude/skills/day/) + [`./s3-sync/`](./s3-sync/). |
 
 ### Lo específico de los agentes: la máquina tiene rol
 

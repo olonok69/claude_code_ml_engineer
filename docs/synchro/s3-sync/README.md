@@ -61,8 +61,10 @@ people rebuilding and pushing it will silently clobber each other.
 > also contains a **hand-authored** file — the curated community names — that
 > nothing regenerates. A rebuild re-derives the graph's internal identifiers from
 > scratch, so the names no longer attach to anything: measured on a real rebuild,
-> **under 1% of them survived**, and even after fixing the underlying cause only
-> ~38% carried across. Recreating them is an hour of judgement, not a command.
+> **under 1% of them survived**. Pinning the identifiers fixed dedup *within* a run,
+> but continuity *between* runs still only carried ~**37–48%** of **~102**
+> hand-authored names across real rebuilds. Recreating them is judgement time, not
+> a command — budget re-labelling into every refresh.
 >
 > Nor is the graph "cheap to derive": a full rebuild is a fan-out of extraction
 > agents over the whole corpus.
@@ -121,7 +123,8 @@ A single shared queue file would hit the same last-writer-wins problem as everyt
 else here and silently drop requests. **Distinct keys never collide**, so a queue of
 one-file-per-request needs no coordination whatsoever. The publisher runs
 `kg_refresh.sh queue` before rebuilding and `queue --clear` after the health check
-passes.
+passes. **`--clear` must delete the consumed keys in the bucket** — a local-only
+archive leaves the originals in the store, and the next pull resurrects them everywhere.
 
 > ⚠️⚠️ **Three things this loop got wrong the first time it was actually run** — it had been
 > documented and taught for weeks without anyone executing it end to end. Each is a general
@@ -132,7 +135,11 @@ passes.
 >    directory. Result: a contributor could file a request that silently never left their
 >    machine. **Before gating a path, enumerate what else is under it.** Coordination data and
 >    published data end up sharing a parent far more often than anyone intends. The guard must
->    exempt the queue, and nothing else in that folder.
+>    exempt the queue, and nothing else in that folder. **Baton scope, stated positively:** the
+>    publisher baton gates `knowledge-graph/` only, not the whole push. A contributor uploads
+>    ticket folders normally, sees `SKIPPED knowledge-graph/` (expected), and still pushes
+>    `refresh_queue/`. An earlier whole-sync gate blocked both the ticket work and the request
+>    mailbox.
 > 2. **`queue --clear` only moved the file locally.** A per-file sync without deletion leaves
 >    the original in the store, so the next pull resurrects the request on *every* machine and
 >    the queue is never actually empty. The clear step has to remove **exactly the keys it
@@ -150,8 +157,9 @@ passes.
 >
 > **Simulate the role before onboarding anyone into it.** A distinct machine identity plus an
 > empty local tree exercises the real scripts safely — a run that wrongly succeeds uploads
-> nothing. That is what turned these four latent failures into an afternoon rather than a new
-> joiner's first week.
+> nothing. That is what turned these three failures and their corollary into an afternoon
+> rather than a new joiner's first week. A same-box simulation that still holds the
+> publisher's write credentials is **not** a two-person proof.
 
 > **Treat the single publisher as scaffolding, not architecture.** Pinning the rebuild
 > to one person's machine stalls the moment that machine is off, travelling, or
@@ -213,8 +221,10 @@ files, and there is no backstop on day 31.
 
 State it plainly in onboarding rather than implying a safety net that thins out:
 
-> Pull before you edit. Push what you changed. If something of yours disappears, say so
-> within the month or it is gone.
+> Push what you changed. Prefer pull before you edit — but if you already have
+> **unpushed** local work, dry-run first: sync does not delete on the way in and will
+> overwrite newer local files with the store's older copy. If something of yours
+> disappears, say so within the month or it is gone.
 
 The alternative — a team that believes storage is durable in a way it is not — produces
 exactly one kind of incident, and it is unrecoverable by the time anyone reports it.
@@ -246,10 +256,10 @@ and you cannot** — the evidence sits on a machine you never look at. Ours went
 unobserved, and was recovered only because bucket versioning happened to be on.
 
 So guard the push as well. Before uploading a shared file, compare the stored copy's last-modified
-time against the last real sync this machine recorded, and if the store has moved since, **refuse**
-— name the files, print both timestamps, and stop. Do not merely warn: a warning inside a 60-line
-transfer preview is exactly the thing that gets scrolled past. Provide an override, document it, and
-document the reason not to use it in the same breath.
+time against the last real sync this machine recorded, and if the store has moved since, **refuse
+(`exit 4` / `REFUSED`)** — name the files, print both timestamps, and stop. Do not merely warn: a
+warning inside a 60-line transfer preview is exactly the thing that gets scrolled past. Provide an
+override (`--allow-clobber`), document it, and document the reason not to use it in the same breath.
 
 Two refinements that turned out to matter more than the check itself:
 
@@ -265,6 +275,21 @@ Two refinements that turned out to matter more than the check itself:
   first symptom was not a corrupt file: with his log erased, the dashboard said he had never closed
   his day. He had. **Before concluding a teammate skipped a process step, check whether your own
   tooling ate the evidence.**
+
+Course scripts (genericised): [`ejemplos/metodologia/s3-sync/`](../../../ejemplos/metodologia/s3-sync/).
+Routine that drives them: the Claude Code [`day` skill](../../../ejemplos/skills-plugins/.claude/skills/day/SKILL.md)
+(`day start` / `day end` / `day status` / `day baton`). Query the derived index with
+[`kg`](../../../ejemplos/skills-plugins/.claude/skills/kg/SKILL.md); contributors
+file a rebuild with
+[`kg-refresh`](../../../ejemplos/skills-plugins/.claude/skills/kg-refresh/SKILL.md)
+(only the publisher rebuilds; `--clear` must delete the consumed keys in the store).
+
+> ⚠️⚠️ **A safety guard can silently disable the instrument that proves the habit.**
+> A pre-pull snapshot installed its own `trap ... EXIT` to clean up a temp file.
+> Bash keeps **one** EXIT trap, so it replaced the one writing the activity ledger.
+> Dry runs kept logging; every real pull went unrecorded for two days while the
+> dashboard stayed populated. Ask what else claims the same single-slot resource;
+> the real path and the rehearsal path are different code.
 
 ### Per-task folders need no coordination at all
 

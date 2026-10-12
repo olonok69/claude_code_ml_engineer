@@ -664,7 +664,7 @@ The fix was to package the two moments the shared record depends on into one cal
 landed) — and to make it **role-aware**, reading the machine's identity card before it touches
 anything. A worked example ships at
 [`ejemplos/skills-plugins/.claude/skills/day/SKILL.md`](./ejemplos/skills-plugins/.claude/skills/day/SKILL.md), and the scripts it drives — genericised but real — are in
-[`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Start from `config.env.example`: that one file is where the design lives, and genericising the eleven scripts for this course changed **one line in one file** because everything environment-specific already lived in the config.
+[`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Start from `config.env.example`: that one file is where the design lives, and genericising the original eleven scripts for this course changed **one line in one file** because everything environment-specific already lived in the config.
 
 Read it for the shape rather than the commands. Every dangerous step is gated behind a question it
 answers first — *is there unpublished local work? which files will this pull overwrite? may this

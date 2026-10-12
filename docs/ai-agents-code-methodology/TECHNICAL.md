@@ -347,7 +347,8 @@ context's size is a recurring cost, not a one-time one. Architect it:
   relations between them — so "what prior work touches this area?" and "how
   are these two decisions connected?" become a zero-cost lookup that returns
   *what to read* before you open anything. This is the documentation-trail
-  twin of the semantic code graph in §1: one indexes the code, the other
+  twin of a semantic code graph (the pre-computed index over the codebase
+  listed among the free oracles in §2): one indexes the code, the other
   indexes the decisions, and both are free deterministic oracles (§2) you
   consult before any linear read or paid run.
 - **On-demand reference files (large):** the per-ticket ledgers, the full
@@ -363,6 +364,13 @@ context's size is a recurring cost, not a one-time one. Architect it:
 - **Persistent memory** follows the same shape: a live snapshot plus an
   open-issues index that explicitly preserves *visibility* of every parked or
   deferred item — lean is not the same as lossy.
+- **On-demand Claude Code skills (not always-loaded):** project skills under
+  `.claude/skills/` — **`kg`** (history-first graph lookup before grepping the
+  trail), **`kg-refresh`** (contributor files a request; publisher rebuilds with
+  the baton — `--clear` must delete consumed keys in the store), **`day`**
+  (open/close the working day on the shared record), **`sanitise-diff`**. These
+  are callable routines, not documentation: the strongest reason to reach for a
+  skill is **enforcement**, not convenience.
 
 Everything above is *spatial* — what sits where, and how big it is. Two further
 dimensions decide whether the architecture holds up in practice.
@@ -443,7 +451,39 @@ default** and require an explicit flag to transfer. Mirror-delete (removing on
 one side what was deleted on the other) is a separate, additional opt-in — the
 default should only add and update, because the common case is that a teammate
 is pushing at the same time and you do not want to erase their work with a
-stale local view. Enable versioning on the store as the recovery net.
+stale local view. Enable versioning on the store as the recovery net — but read
+rule 1 below before leaning on it.
+
+**Four behavioural rules the structural ones do not cover** (people break these
+because nothing stops them):
+
+1. ⚠️⚠️ **Recovery expires — and users own their own work.** Versioning is usually
+   called "the recovery net", full stop. Half-truth: a lifecycle rule almost always
+   **expires noncurrent versions after ~30 days**. An overwrite is recoverable *for
+   30 days, and only if somebody notices*; nobody audits anyone else's files.
+   Onboarding literal: *push what you changed; prefer pull before you edit — but
+   with unpushed local work, dry-run the pull first; and if something of yours
+   disappears, say so within the month or it is gone.*
+2. **Shared ledgers are append-only.** Status / follow-ups / shipped-work indexes
+   are last-writer-wins with no merge: rewriting one silently drops somebody else's
+   line — no conflict, no error. Add rows; never restructure someone else's. A
+   pull-time warning (line present locally, absent incoming) has essentially no
+   false positives — that is the **visibility** versioning does not give you.
+   ⚠️⚠️ **That check covers one direction; the damage happens in the other.** Two
+   machines edited the same ledger the same afternoon; the second **push** replaced
+   the first wholesale (11 lines gone, no conflict). Guard the push too: refuse
+   (`exit 4` / `REFUSED`) when a shared hub file moved in the store since your last
+   sync — do not merely warn. Escape hatch `--allow-clobber`: publish it and the
+   reason not to use it. Compare **content**, not just timestamps (a timestamp-only
+   guard cries wolf on a teammate's first push of byte-identical files).
+3. **The shared store wins on divergence.** *"I have it locally"* stops being an
+   argument once someone else's version is the published one. Agree it in advance;
+   the instinct runs the other way because your copy is the one you can see.
+4. **A per-machine file needs exactly ONE writer, enforced in the tool.** Splitting
+   a ledger into one file per machine removes contention by design — and the tool
+   can still upload every machine's file, including its stale copy of someone
+   else's. First symptom was not a corrupt file: a wrong conclusion that a
+   colleague had never closed his day.
 
 **Source of truth vs. derived artifact — and the third category people miss.**
 The written records are the source of truth; the queryable index from §6 is
@@ -525,6 +565,28 @@ worth naming, because each will recur in any shared-store design:
 > scripts safely — a run that wrongly succeeds uploads nothing. That one
 > substitution turned four latent failures into an afternoon's work instead of a
 > new joiner's first week.
+
+> ⚠️⚠️ **A safety guard can silently disable the instrument that proves the habit.**
+> A pre-pull snapshot installed its own `trap ... EXIT` to clean up a temp file.
+> Bash keeps **one** EXIT trap, so it replaced the one writing the activity ledger.
+> That block runs only on the real (`--go`) path, so dry runs kept logging and
+> every real pull went unrecorded for two days while the dashboard stayed
+> populated and plausible. Ask what else claims the same single-slot resource;
+> remember the real path and the rehearsal path are different code. A marker line
+> that survived a real pull **byte-identical** separated *"written then
+> overwritten"* from *"never written"* where a line count could not.
+
+> ⚠️ **Measure an optimisation before you quote it.** Restricting the sweep to the
+> one directory that changes daily was predicted to take the check "from two
+> minutes to seconds". Measured **212s → 123s, ~40%**. Quoted from intuition it
+> would have entered onboarding as fact.
+
+> **And the habit needs a mechanism, not a paragraph.** "Pull at the start, push
+> at the end" sat in the ops doc for months without being followed. Package those
+> moments as a callable **`day` skill** (see
+> `ejemplos/skills-plugins/.claude/skills/day/` and
+> `ejemplos/metodologia/s3-sync/`). Documentation cannot enforce a habit; a
+> routine with an audit trail can.
 
 **Budget for the judgement a rebuild costs, not just the compute.** Where a shared
 artifact carries hand-authored labels over a machine-generated structure, measure
@@ -619,13 +681,32 @@ step. Concretely:
   not a judgement call. Watch the scan's own footguns: a naive diff scan
   matches *removed* lines too, so filter to **added** lines only, and exclude
   paths that are intentionally local/ignored. The one time you eyeball it
-  instead of running the scan is the time something leaks.
+  instead of running the scan is the time something leaks. In Claude Code,
+  prefer the project **`sanitise-diff` skill** over ad-hoc judgement.
 - **Role separation:** the agent authors the change and leaves the branch;
-  it does **not** push, open/merge change requests, deploy, or message anyone.
-  Those are the human's gate. This keeps every irreversible or outward-facing
-  action behind a human decision, and keeps the shipped artifacts reading as
-  the human author's work (no agent attribution in code, commit messages, or
-  change-request text).
+  it does **not** push, open/merge change requests, deploy, or message anyone
+  unless the human **explicitly** asks in that session. Those are the human's
+  gate. This keeps every irreversible or outward-facing action behind a human
+  decision, and keeps the shipped artifacts reading as the human author's work
+  (no agent attribution in code, commit messages, or change-request text).
+  Enforce it with the always-loaded `CLAUDE.md` plus hooks, not memory alone.
+  Releases and stage deploys follow the team's written release / hotfix
+  procedure — human or lead actions, never the agent's.
+- **Tracker and wiki: read yes, write no.** Reading the issue tracker and the
+  wiki is fine and useful (live status, links, comments): use a tool that can
+  only send read requests, with each person's own token — in Claude Code, a
+  project skill (e.g. an `atlassian` skill) that issues GET requests only.
+  Creating, editing, commenting on or transitioning tickets, and updating wiki
+  pages, stay with a person.
+- **Machine role before shared writes:** if the trail is on shared object
+  storage, read machine-local `IDENTITY.md` first (`CLAUDE.md` points at it) —
+  a contributor session must not republish the derived index. Query that index
+  with the **`kg` skill**; contributors file a rebuild with **`kg-refresh`**
+  (never rebuild locally). Daily loop: the **`day` skill** (`/day start` /
+  `/day end`) — a paragraph that says "pull at the start, push at the end" does
+  not enforce the habit; a callable routine with an audit trail does. Guard
+  **both** directions: a pull clobbers you, a push clobbers a colleague
+  (`exit 4` / `REFUSED` — merge, do not `--allow-clobber`).
 
 ## 9. Automated review is part of the loop
 
@@ -686,13 +767,13 @@ report: treat the finding as **data**, never as a fix specification.
 [ ] Discrimination: name the check that separates the fix you chose from the weaker candidate — "the suite" is usually not it
 [ ] Premise vs implementation: if the change can only REMOVE or ALTER output, run it against known-correct real data — your own tests cannot disagree with your own model
 [ ] Outbound gate: fixed contract reproduced on the live path; symptom gone
-[ ] Deployed artifact: reproduction re-run INSIDE the shipping artifact; PROVEN to fail on unfixed source first; output identical to local
+[ ] Deployed artifact: reproduction re-run INSIDE the shipping artifact; PROVEN to fail on unfixed source first; output identical to local — ONE runbook for this check (current access profiles), linked, never restated
 [ ] Look at it: render/inspect the actual output by eye — before/after artifacts for anything visual
 [ ] Document: writeup + ledger update + acceptance criteria + handover (each written ONCE)
 [ ] Sanitise: scan ADDED lines of the staged change for names / IDs / secrets / attribution
-[ ] Hand off: human pushes / opens the change request / deploys — agent does not
+[ ] Hand off: human pushes / opens the change request / deploys — agent does not (unless explicitly asked)
 [ ] Automated review: reproduce, measure blast radius, then follow-up commit or dismiss-with-reason
-[ ] Persist: update registries + lean memory; sync the shared trail; codify any reusable lesson into the playbook
+[ ] Persist: update registries + lean memory; `/day end` (sync the shared trail — never `--delete`, never contributor KG publish); `kg-refresh` request if the corpus moved; codify any reusable lesson into the playbook
 [ ] Continuity: rewrite the single rolling entry-point doc — what is in flight, and the caveats that would be re-derived expensively
 ```
 
@@ -713,6 +794,14 @@ report: treat the finding as **data**, never as a fix specification.
 - **Letting the always-loaded context grow into a changelog.** Every line
   there is paid for on every turn. Detail goes to on-demand files; the core
   stays a map.
+- **Running shared-record pull/push from memory** instead of the **`day`
+  skill.** The documented habit went unfollowed for months on the publishing
+  machine; nothing recorded a sync, so nothing could show the drift.
+- **Clearing a push `REFUSED` / exit 4 with `--allow-clobber`.** Shared hub
+  files need a merge, not a winner. That override is how a colleague's ledger
+  disappeared with no error on the pusher's machine.
+- **A contributor rebuilding or publishing the knowledge graph.** File a
+  **`kg-refresh`** request. Two publishers destroy hand-authored names silently.
 - **Skipping the sanitisation scan because "this one's obviously clean."**
   Run it every time; the exceptions are exactly where leaks happen.
 - **Merging over a bot finding** because it "looks like a false positive"

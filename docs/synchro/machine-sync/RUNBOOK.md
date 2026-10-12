@@ -134,15 +134,15 @@ The tarball carries your **`.aws` config** (dereferenced from the symlink → re
    ```bash
    hash -r                       # clear any stale command-path cache first (see Guardrails)
    aws --version
-   aws configure list-profiles   # expect: nonprod-dev, dev-new, prod-dev, default
+   aws configure list-profiles   # expect: dev-nonprod, kb-s3, shared-ecr (older names are dead since 2026-09-03)
    ```
    > After a full-copy restore, laptop `~/.aws` is a **real dir (a snapshot)**, not a live symlink to
    > Windows — it won't auto-track Windows-side changes. Fine for travel. The SSO *token cache* in it
    > is stale/expired regardless, so:
 3. **Log in once** (one session covers all three profiles — shared `ils` sso-session; opens a browser):
    ```bash
-   aws sso login --profile nonprod-dev
-   aws sts get-caller-identity --profile dev-new   # expect Account <account-id>, ReadOnlyAccess
+   aws sso login --sso-session ils
+   aws sts get-caller-identity --profile dev-nonprod   # expect Account <account-id>, DeveloperNonprod
    ```
 
 ### Step 4c — CodeGraph + GSD on the laptop (tooling not fully in the bundle)

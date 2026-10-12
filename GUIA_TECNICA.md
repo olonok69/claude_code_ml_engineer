@@ -664,7 +664,7 @@ invocable — `day start` (preparar la máquina y dar el parte) y `day end` (esc
 confirmar que llegó) — y hacerla **consciente del rol**, leyendo la tarjeta de identidad de la
 máquina antes de tocar nada. Hay un ejemplo completo en
 [`ejemplos/skills-plugins/.claude/skills/day/SKILL.md`](./ejemplos/skills-plugins/.claude/skills/day/SKILL.md), y los scripts que orquesta —genericizados pero reales— están en
-[`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Empieza por `config.env.example`: ese fichero es donde vive el diseño, y genericizar los once scripts para este curso cambió **una línea en un fichero**, porque todo lo específico del entorno ya estaba en la config.
+[`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Empieza por `config.env.example`: ese fichero es donde vive el diseño, y genericizar los once scripts originales para este curso cambió **una línea en un fichero**, porque todo lo específico del entorno ya estaba en la config.
 
 Léela por la forma, no por los comandos. Cada paso peligroso está detrás de una pregunta que
 responde antes — *¿hay trabajo local sin publicar?, ¿qué ficheros va a sobrescribir este pull?,

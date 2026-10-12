@@ -11,7 +11,7 @@ description: >-
 
 ## Role gate (read first)
 
-1. Read machine-local `IDENTITY.md` (via `AGENTS.md`).
+1. Read machine-local `IDENTITY.md` (via `CLAUDE.md`).
 2. If role is **contributor** (or baton is not held here):
    - Do **not** rebuild or publish `knowledge-graph/`.
    - File a request instead, then push:

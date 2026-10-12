@@ -23,7 +23,13 @@ otherwise `status`.
 > **Why this is a skill and not just a doc.** The rule "pull at the start, push at the
 > end" sat in `OPERATIONS.md` for months and was not being followed on the publisher
 > machine — nothing recorded a sync, so nothing could show the drift. Documentation
-> cannot enforce a habit; a callable routine can.
+> cannot enforce a habit; a callable routine can. Read this for the **shape**, not the
+> commands: every dangerous step answers a question first, and where the answer is
+> ambiguous it **stops and asks**.
+
+Everything below runs on **macOS, Linux and WSL** — plain `bash`, no PowerShell.
+Course copy of the scripts: `ejemplos/metodologia/s3-sync/` (start from
+`config.env.example` — **never** ship a real `config.env`).
 
 ---
 
@@ -69,11 +75,10 @@ If `S3` is empty, tell the user this repo has no shared record and STOP.
 
    ```bash
    (cd "$S3" && ./data-push.sh --root changes)   # dry run: anything listed is local-only work
+   ```
 
    `--root changes` limits the sweep to the only root that moves day to day (measured 212s → 123s:
    a trim, not an order of magnitude). Fine for this check; use the full sweep when publishing.
-
-   ```
 
    - **Nothing listed** → the previous session ended properly; go to step 2.
    - **Something listed** → that is unpublished work from a previous session. Say what it
@@ -102,7 +107,7 @@ If `S3` is empty, tell the user this repo has no shared record and STOP.
    - **Exit code 3, "CASE-COLLIDING FILES"** — two bucket objects differ only in
      capitalisation and map to one file on this machine. **Stop.** The pull would pick a
      winner at random. Delete the wrong-cased key in the bucket first; canonical casing for
-     ticket docs is lowercase `sst-NNNN.md`.
+     ticket docs is lowercase `sst-NNNN.md` (placeholder pattern).
 
    ⚠️ If this fails on credentials, **re-login before drawing any conclusion** — an
    expired cached token reports as a permission error and has produced wrong findings
@@ -151,6 +156,11 @@ If `S3` is empty, tell the user this repo has no shared record and STOP.
    ```bash
    (cd "$S3" && ./data-push.sh)
    ```
+
+   ⚠️ Watch for **fixture files** (`.docx`/`.pdf` under fixture / issue / sample dirs).
+   An extractor run re-saves fixtures in place, and a re-saved fixture can keep its exact
+   byte size while its hash changes. Do not push over the bucket's pristine copy — restore
+   yours from the bucket instead.
 
 3. **Publish.** Never `--delete` unless the user explicitly asks and this machine is the
    publisher.

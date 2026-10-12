@@ -7,7 +7,7 @@ comments is there because it cost something.
 > ⚠️ The one file NOT here is `config.env`. It names a bucket, two account profiles and a machine
 > role, and it must never be committed, synced or packaged. Start from
 > [`config.env.example`](./config.env.example) — and read it first, because **that is where the
-> design lives**. Genericising the eleven scripts for this course changed *one line in one file*;
+> design lives**. Genericising the original eleven scripts for this course changed *one line in one file*;
 > everything environment-specific was already in the config.
 
 ## The model in one paragraph
@@ -31,6 +31,7 @@ no merge. Everything here exists to make that cost survivable.
 | `mount-data.sh` / `unmount-data.sh` | The **read-only** live view. Never write through a mount. |
 | `_activity_log.sh` | One JSON line per run, to `_activity/<machine>.jsonl`. |
 | `_config_check.sh` | Actionable failure when `config.env` predates the per-root model. |
+| `_queue_reconcile.sh` | Sourced by pull and push: drops a local refresh request once its `consumed/` twin exists, so the requester's next push cannot put an already-actioned request back in the store. |
 
 ## Five things worth reading the code for
 
