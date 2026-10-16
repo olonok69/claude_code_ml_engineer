@@ -636,6 +636,7 @@ own private index** of the same history. Full runbook:
 | Scope grows **in reviewed phases** | It started narrow (`changes/**/*.md` + the graph) and widened over four phases to the whole tree, client binaries included — **with the owner signing off each step**. Widening is easy; retracting is not. ⚠️ **Every widening is a security event**: scan first, and **canary the scanner before you believe it** (a scan over 1,141 files reported clean — *and so did the canary with a planted secret*, because one filename parsed as a command-line option and aborted the batch silently; repaired, it found 15 files carrying signed URLs). Then **reconcile**: a clean transfer report only says *"what I was asked to send, I sent"*, never *"what exists is there"*. |
 | **Write via sync, read via read-only mount** | Object storage has no locking and no atomic rename: a writable mount corrupts, and you find out weeks later. |
 | Dry-run by default; `--delete` is a separate opt-in | An exact mirror from a stale local view **erases** what a teammate just pushed. |
+| **Deliberate deletion is a tool, with a tombstone** | `aws s3 sync` cannot tell "deleted on purpose" from "missing": a file deleted by hand **came back twice** with another machine's next push (a 176 MB recording). `delete.sh` (publisher only, baton held) deletes **one** file and appends a tombstone to `_deletions.jsonl`, **outside every synced root**; every pull moves it aside to `_prepull/<ts>/deleted/` (never `rm`) and every push excludes it. A push that **cannot read** the list refuses (`exit 5`): an unreadable list read as empty is exactly the bug. Never `aws s3 rm` or `--delete` by hand. |
 | Docs = source of truth; the graph is **derived** | Per-task files almost never collide; the generated graph is the only real contention point → rebuild locally (`/kg-refresh`) or have **one publisher**. |
 | ⚠️⚠️ **Recovery EXPIRES — and users own their own work** | Versioning is invariably called "the recovery net", full stop. Half-truth: it will almost always carry a lifecycle rule **expiring noncurrent versions after 30 days**. An overwrite is recoverable **for 30 days, and only if somebody notices**; nobody audits anyone else's files. Say it literally in onboarding: *pull before you edit, push what you changed, and if something of yours disappears, say so within the month or it is gone.* |
 | **Shared ledgers are append-only** | `STATUS.md`, `TICKETS.md`, `FOLLOWUPS.md`… Last-writer-wins with no merge: **rewriting one silently drops somebody else's line**, with no conflict and no error. Add rows; never restructure someone else's. Detection is cheap: a line present locally and absent from the incoming copy is either a deliberate deletion or a clobber → a pull-time warning has essentially no false positives. That is the **visibility** versioning does not give you: it makes the loss *recoverable*, not *noticed*. ⚠️⚠️ **We shipped exactly that check and still lost work** — see the next row. |
@@ -665,6 +666,15 @@ landed) — and to make it **role-aware**, reading the machine's identity card b
 anything. A worked example ships at
 [`ejemplos/skills-plugins/.claude/skills/day/SKILL.md`](./ejemplos/skills-plugins/.claude/skills/day/SKILL.md), and the scripts it drives — genericised but real — are in
 [`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Start from `config.env.example`: that one file is where the design lives, and genericising the original eleven scripts for this course changed **one line in one file** because everything environment-specific already lived in the config.
+
+Since then the `day start` briefing has grown two lines, both **read-only**: ticket status refreshed
+from the tracker (the [`atlassian`](./ejemplos/skills-plugins/.claude/skills/atlassian/SKILL.md) skill:
+GET only, writes stay with the person) and the last 24 h of service failures, counted without
+downloading anything (the [`evidence`](./ejemplos/skills-plugins/.claude/skills/evidence/SKILL.md)
+skill). And a deliberate deletion from the shared record is now `delete.sh` on the publisher, which
+leaves a tombstone in the bucket: `aws s3 sync` cannot tell "deleted on purpose" from "missing", so a
+file deleted by hand came back with the next push from any machine. Tools:
+[`ejemplos/metodologia/tools/`](./ejemplos/metodologia/tools/).
 
 Read it for the shape rather than the commands. Every dangerous step is gated behind a question it
 answers first — *is there unpublished local work? which files will this pull overwrite? may this

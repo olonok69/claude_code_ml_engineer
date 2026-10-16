@@ -35,6 +35,8 @@ donde el `impact` plano de CodeGraph los mezclaría.
 | Docs de una librería externa | **Context7** | En vez de fiarse del corte de entrenamiento del modelo. |
 | Estado de git / PRs para orientarse | **`gh` CLI**, `git branch -a`, `git log` | "status-first": no ramificar de la base equivocada. |
 | "¿Qué tickets/lecciones rodean este área?" | **`/kg`** (grafo de tickets — [`../../docs/KNOWLEDGE_GRAPH.md`](../../docs/KNOWLEDGE_GRAPH.md)) | "history-first": `/kg <ticket\|tema>` saca, **sin LLM**, los tickets relacionados + la zona de peligro a leer, ANTES de hacer grep en `data/changes/`. Es el análogo de CodeGraph para tickets — construido con **graphify**. |
+| Estado vivo de un ticket, enlaces, comentarios; leer o comparar una página de la wiki | **skill `atlassian`** ([`tools/atlassian/`](./tools/atlassian/)) | **Solo `GET`**, impuesto en el código. Crear/editar/comentar/transicionar tickets es de la persona; actualizar una página de Confluence va por plan → diff → OK humano por página. |
+| Evidencia de una ejecución que falló (fuente tal y como estaba, artefacto, resultado, log) | **skill `evidence`** ([`tools/README.md`](./tools/README.md)) | La línea de log es el índice; la versión de S3 se elige por ventana de tiempo, no "la actual". Solo lectura (wrapper que rechaza escrituras). Re-login antes de diagnosticar un error AWS. |
 | Trabajo genuinamente independiente en paralelo | **Subagentes** (`Task`: Explore/Plan/…) | Sin ensuciar el contexto principal. |
 
 ## El orden importa (barato → caro, determinista → probabilístico)

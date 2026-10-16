@@ -53,7 +53,14 @@ Todas sanitizadas (sin nombres de cliente, IDs de ticket ni identificadores de c
 | [`kg`](./.claude/skills/kg/SKILL.md) | Consulta determinista del grafo de tickets **antes** de grepear el registro | Una skill puede ser *barata y sin LLM*: lee un artefacto ya construido y apunta a qué leer. |
 | [`kg-refresh`](./.claude/skills/kg-refresh/SKILL.md) | Reconstruir el grafo cuando el corpus se mueve — **solo publisher** | ⚠️ Lleva la convención de IDs de nodo: sin fijarla, solo **12,6%** de los ids y **6,3%** de las etiquetas sobrevivían a un refresco, y con ellas se perdían todos los nombres de comunidad escritos a mano. |
 | [`sanitise-diff`](./.claude/skills/sanitise-diff/SKILL.md) | Puerta mecánica antes de commit/PR: nombres de cliente, IDs de ticket, secretos, auto-atribución del agente | ⚠️ Lee su nota final: **el fichero cuya misión es cazar nombres de cliente es el único que los contiene todos**. La lista va fuera, gitignored. |
+| [`atlassian`](./.claude/skills/atlassian/SKILL.md) | Leer Jira y Confluence (estado vivo, enlaces, comentarios, XML del ticket, diff de una página contra un fichero local) | ⚠️ La frontera lectura/escritura vive **en el código**: una sola función de red y solo `GET`, con un test que lo afirma. Escribir en Confluence es otra herramienta con plan → diff → **OK humano por página** → apply. Tickets: siempre la persona. Herramienta: [`../metodologia/tools/atlassian/`](../metodologia/tools/atlassian/). |
+| [`evidence`](./.claude/skills/evidence/SKILL.md) | Reunir la evidencia de una ejecución (fuente tal y como estaba, artefacto, JSON de resultado, log, manifiesto) o descubrir todos los fallos de una ventana | ⚠️⚠️ Su primer canario **pasó con versiones equivocadas** porque dos subidas eran idénticas byte a byte; ahora afirma timestamps conocidos. Núcleo y diseño: [`../metodologia/tools/evidence/`](../metodologia/tools/README.md). |
 | [`methodology-plan`](./.claude/skills/methodology-plan/SKILL.md) | Rellenar la plantilla de planificación tras el triaje y la investigación barata | Una skill como *gate de proceso*: no escribe código, obliga a que exista un plan antes. |
+
+`day start` también refresca la tabla de estado de tickets desde el tracker (paso 3b: el publisher la
+escribe, el resto solo recibe el resumen) y cuenta los fallos del servicio de las últimas 24 h sin
+descargar nada (paso 3c, `evidence.py discover --list`); en el publisher, además,
+`delete.sh --check` avisa de ficheros borrados a propósito que han vuelto al registro.
 
 Los scripts que la skill `day` orquesta están en
 [`../metodologia/s3-sync/`](../metodologia/s3-sync/) — reales y ejecutables.

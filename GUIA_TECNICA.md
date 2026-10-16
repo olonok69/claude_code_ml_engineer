@@ -635,6 +635,7 @@ ticket/PR; moverse degenera en empaquetarlo todo; y cada compañero acaba con **
 | Alcance **por fases**, cada una revisada | Empezó estrecho (`changes/**/*.md` + grafo) y se ensanchó en cuatro fases hasta el árbol completo, binarios de cliente incluidos — **con la firma del dueño en cada salto**. Ensanchar es fácil; retraer, no. ⚠️ **Cada ampliación es un evento de seguridad**: escanea antes, y **canaria el escáner primero** (un escaneo de 1.141 ficheros dio limpio *y el canario con un secreto plantado también* — un nombre se parseó como opción y abortó el lote en silencio; arreglado, encontró 15 ficheros con URLs firmadas). Y después **reconcilia**: un informe de transferencia limpio solo dice *"lo que me pediste enviar, lo envié"*, nunca *"lo que existe está"*. |
 | **Escribe por sync, lee por mount de solo lectura** | El almacenamiento de objetos no tiene locking ni rename atómico: un mount escribible corrompe y se descubre semanas después. |
 | Dry-run por defecto; `--delete` es opt-in aparte | Un espejo exacto desde una vista local vieja **borra** lo que un compañero acaba de empujar. |
+| **Borrar a propósito es una herramienta, con lápida** | `aws s3 sync` no distingue "borrado a propósito" de "falta": un fichero borrado a mano **volvió dos veces** con el siguiente `push` de otra máquina (una grabación de 176 MB). `delete.sh` (solo el publisher, con el baton) borra **un** fichero y añade una lápida a `_deletions.jsonl`, **fuera de toda raíz sincronizada**; cada `pull` lo aparta a `_prepull/<ts>/deleted/` (nunca `rm`) y cada `push` lo excluye. Un `push` que **no puede leer** la lista se niega (`exit 5`): una lista ilegible leída como vacía es justo el bug. Nunca `aws s3 rm` ni `--delete` a mano. |
 | Docs = fuente de verdad; el grafo es **derivado** | Los ficheros por ticket casi nunca chocan; el grafo generado es el único punto real de contención → reconstruir en local (`/kg-refresh`) o **un solo publisher**. |
 | ⚠️⚠️ **La recuperación CADUCA — y cada uno responde de su trabajo** | El versionado se describe siempre como "la red de seguridad", punto. Es media verdad: casi siempre lleva una regla de ciclo de vida que **expira las versiones no actuales a los 30 días**. Una sobrescritura es recuperable **30 días y solo si alguien se da cuenta**; nadie audita los ficheros de nadie. Dilo literal en el onboarding: *baja antes de editar, sube lo que cambiaste, y si desaparece algo tuyo, dilo dentro del mes o se ha ido.* |
 | **Los ledgers compartidos son de solo-append** | `STATUS.md`, `TICKETS.md`, `FOLLOWUPS.md`… Last-writer-wins sin merge: **reescribir uno borra en silencio la línea de otra persona**, sin conflicto ni error. Añade filas, no reestructures las ajenas. Detectarlo es barato: una línea presente en local y ausente en la copia entrante es borrado deliberado o pisotón → un chequeo en el `pull` que avise casi no tiene falsos positivos. Es la **visibilidad** que el versionado no da: hace la pérdida *recuperable*, no *advertida*. ⚠️⚠️ **Construimos ese chequeo exacto y aun así perdimos trabajo** — ver la fila siguiente. |
@@ -665,6 +666,15 @@ confirmar que llegó) — y hacerla **consciente del rol**, leyendo la tarjeta d
 máquina antes de tocar nada. Hay un ejemplo completo en
 [`ejemplos/skills-plugins/.claude/skills/day/SKILL.md`](./ejemplos/skills-plugins/.claude/skills/day/SKILL.md), y los scripts que orquesta —genericizados pero reales— están en
 [`ejemplos/metodologia/s3-sync/`](./ejemplos/metodologia/s3-sync/). Empieza por `config.env.example`: ese fichero es donde vive el diseño, y genericizar los once scripts originales para este curso cambió **una línea en un fichero**, porque todo lo específico del entorno ya estaba en la config.
+
+Desde entonces el parte de `day start` creció dos líneas, ambas de **solo lectura**: el estado de los
+tickets refrescado desde el tracker (skill [`atlassian`](./ejemplos/skills-plugins/.claude/skills/atlassian/SKILL.md):
+solo `GET`, las escrituras siguen siendo de la persona) y los fallos del servicio de las últimas 24 h,
+contados sin descargar nada (skill [`evidence`](./ejemplos/skills-plugins/.claude/skills/evidence/SKILL.md)).
+Y un borrado deliberado del registro compartido es ahora `delete.sh` en el publisher, que deja una
+lápida en el bucket: `aws s3 sync` no sabe distinguir "borrado a propósito" de "falta", así que un
+fichero borrado a mano volvía con el siguiente push de cualquier máquina. Herramientas:
+[`ejemplos/metodologia/tools/`](./ejemplos/metodologia/tools/).
 
 Léela por la forma, no por los comandos. Cada paso peligroso está detrás de una pregunta que
 responde antes — *¿hay trabajo local sin publicar?, ¿qué ficheros va a sobrescribir este pull?,

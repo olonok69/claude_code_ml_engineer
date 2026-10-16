@@ -38,7 +38,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 - [`ejemplos/context/`](./ejemplos/context/) — gestión del context window: anatomía, comandos, higiene (§03).
 - [`ejemplos/prompt-caching/`](./ejemplos/prompt-caching/) — cómo funciona el caching + demo ejecutable `cache_demo.py` (§03).
 - [`ejemplos/mcp/`](./ejemplos/mcp/) — `.mcp.json` con scopes y secretos por entorno (§04).
-- [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill (§05).
+- [`ejemplos/skills-plugins/`](./ejemplos/skills-plugins/) — un slash command y una skill (§05), más las skills reales del proyecto (`day`, `kg`, `kg-refresh`, `sanitise-diff`, `methodology-plan`, `atlassian`, `evidence`); las herramientas de solo lectura que usan las dos últimas están en `ejemplos/metodologia/tools/`.
 - [`ejemplos/subagents/`](./ejemplos/subagents/) — subagentes custom (`.claude/agents/`), agent teams y el diagrama subagente-vs-team (§06).
 - [`ejemplos/hooks/`](./ejemplos/hooks/) — 5 hooks reales (seguridad, observabilidad, formato, type-check, "IA revisando IA") + payloads (§07).
 - [`ejemplos/automation/`](./ejemplos/automation/) — GitHub Action, Agent SDK, scheduling (§07).
@@ -47,7 +47,7 @@ partes diferenciadas** y dos guías escritas, con ejemplos reales y ejecutables.
 - [`ejemplos/metodologia/`](./ejemplos/metodologia/) — **el flujo real de 11 etapas, un ejemplo concreto de principio a fin, la prevalencia de tools** (Serena/CodeGraph/Playwright/AWS/Docker/oráculo determinista), el **gate outbound de cinco checks** (validar el instrumento de medida · contrato vía *wrapper* · lista de miembros, no totales · verificación en la **imagen desplegada** · mirar la salida), el **runbook de ops** (sincronizar el workspace entre máquinas, y su evolución a registro compartido) y el diagrama del flujo (§08, §11).
 - [`ejemplos/gsd/`](./ejemplos/gsd/) · [`ejemplos/codegraph/`](./ejemplos/codegraph/) · [`ejemplos/serena/`](./ejemplos/serena/) — las herramientas del método, en profundidad (§09).
 - [`docs/ai-agents-code-methodology/`](./docs/ai-agents-code-methodology/) — el starter-kit portable + adaptación a GitHub Copilot (§10).
-- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización: `machine-sync/` (tarball+USB, bring-up completo), `laptop-to-main/` (delta de vuelta) y **`s3-sync/`** (el registro de ingeniería compartido sobre S3: sync vs mount de solo lectura, roles publisher/contributor, identidad por máquina) (§11).
+- [`docs/synchro/`](./docs/synchro/) — runbooks reales de sincronización: `machine-sync/` (tarball+USB, bring-up completo), `laptop-to-main/` (delta de vuelta) y **`s3-sync/`** (el registro de ingeniería compartido sobre S3: sync vs mount de solo lectura, roles publisher/contributor, identidad por máquina, borrados deliberados con lápidas vía `delete.sh`) (§11).
 
 **Parte 3:**
 - [`docs/knowledge-graph/`](./docs/knowledge-graph/) — el grafo de conocimiento de tickets, construido con **graphify**: diseño (`design.md`), scripts (`kg_query.sh`, `kg_refresh.sh`, `build_manifest.py`, `stage_corpus.py`), tests, `manifest.txt` y la **salida real** (`output/graph.html` interactivo + `GRAPH_REPORT.md`) (§12).
